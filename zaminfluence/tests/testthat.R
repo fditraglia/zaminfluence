@@ -13,3 +13,5 @@ test_file("testthat/test_catchall.R")
 
 # This is a little slow
 test_file("testthat/test_derivs.R")
+
+test_file("testthat/test_logit.R")

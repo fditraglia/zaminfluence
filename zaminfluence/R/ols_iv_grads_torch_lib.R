@@ -445,20 +445,17 @@ ComputeIVRegressionInfluence <- function(
 #'
 #' @export
 ComputeModelInfluence <- function(fit_object, se_group=NULL, keep_pars=NULL) {
-  valid_classes <- c("lm", "ivreg")
-  model_class <- class(fit_object)
-  if (!(model_class %in% valid_classes)) {
-    stop(sprintf("The class of `model_fit` must be one of %s",
-                 paste(valid_classes, collapse=", ")))
-  }
-  if (model_class == "lm") {
-    return(ComputeRegressionInfluence(
+  if (inherits(fit_object, "glm")) {
+    return(ComputeLogitInfluence(
       fit_object, se_group=se_group, keep_pars=keep_pars))
-  } else if (model_class == "ivreg") {
+  } else if (inherits(fit_object, "ivreg")) {
     return(ComputeIVRegressionInfluence(
       fit_object, se_group=se_group, keep_pars=keep_pars))
+  } else if (inherits(fit_object, "lm")) {
+    return(ComputeRegressionInfluence(
+      fit_object, se_group=se_group, keep_pars=keep_pars))
   } else {
-    # Redundant, so sue me.
-    stop(sprint("Unknown model class %s", model_class))
+    stop(sprintf("Unsupported model class: %s",
+                 paste(class(fit_object), collapse=", ")))
   }
 }

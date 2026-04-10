@@ -94,6 +94,22 @@ GenerateRegressionData <- function(num_obs, param_true, x=NULL, num_groups=NULL)
 
 
 #' @export
+GenerateLogitData <- function(num_obs, param_true, x=NULL) {
+  x_dim <- length(param_true)
+  if (is.null(x)) {
+    x <- matrix(rnorm(num_obs * x_dim), num_obs, x_dim)
+    x <- x - rep(colMeans(x), each=num_obs)
+  }
+  p <- plogis(x %*% param_true)
+  y <- rbinom(num_obs, 1, p)
+  df <- data.frame(x)
+  names(df) <- paste0("x", 1:x_dim)
+  df$y <- y
+  return(df)
+}
+
+
+#' @export
 GenerateIVRegressionData <- function(num_obs, param_true, num_groups=NULL) {
   # Simulate some IV data
 

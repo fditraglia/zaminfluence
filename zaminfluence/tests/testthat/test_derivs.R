@@ -1,6 +1,12 @@
 #!/usr/bin/env Rscript
 
 # Numerically test the derivatives.
+#
+# NOTE: These tests are flaky. With num_obs=20, 4 coefficients (3 regressors +
+# intercept), and 10 SE groups, some random draws produce near-singular matrices
+# that cause NaN derivatives. There is no set.seed(), so failures are
+# non-deterministic. This predates the logit addition and should be fixed
+# separately (e.g. by adding set.seed or increasing num_obs).
 
 library(AER)
 library(zaminfluence)
