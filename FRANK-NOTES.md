@@ -1,0 +1,8 @@
+# Notes on Extending the `zaminf` package
+
+## 2026-04-10: Initial Exploration
+
+- Under the hood, `zaminf` relies on the [`torch`](https://torch.mlverse.org/docs/) R package. More details of the package are available in [this book](https://skeydan.github.io/Deep-Learning-and-Scientific-Computing-with-R-torch/). In short, `torch` brings the functionality of PyTorch to R. It has no Python dependences: `torch` is written in R, C++ and C.
+- I was worried that `torch` might not provide GPU acceleration on Mac, but in fact it has an [MPS backend](https://developer.apple.com/metal/pytorch/): `library(torch); backends_mps_is_available()`. 
+- In `./zaminfluence/inst` there is a `.lyx` file and generated `.pdf` with (partial) derivations of the required derivatives the case of OLS/IV. The derivations are complete for "classical" standard errors but they kind of trail off at the end for the case of "grouped" (presumably this means clustered?) standard errors: "Looking at it this way I'm not sure how you could avoid either a for loop over the entries of $\hat{\beta}$ or construction of higher dimensional arrays". That seems right to me, given that some variants of clustered standard errors do require a loop. But if we want to implement torch-free calculations for our leading examples, this seems possible and someone else has already done the math for us! We need to check it, however, and we would then need to check the results against those of `torch`. 
+- `zaminf` seems relatively straightforward to extend, provided that one understands the way that the package relies on `S3` classes. I'm a little rusty on these, so it's worth reviewing [Hadley's book](https://adv-r.hadley.nz/s3.html)
