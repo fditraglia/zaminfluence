@@ -153,10 +153,13 @@ test_that("logit unsupported inputs error", {
     ComputeLogitInfluence(glm_quasi),
     "Only binomial")
 
-  # Missing x=TRUE
+  # Missing x=TRUE: both ComputeLogitInfluence and CheckLogitDiagnostics
   glm_nox <- glm(y ~ x1 + 1, data=df, family=binomial, y=TRUE)
   expect_error(
     ComputeLogitInfluence(glm_nox),
+    "x=TRUE")
+  expect_error(
+    CheckLogitDiagnostics(glm_nox),
     "x=TRUE")
 
   # Non-binary response: construct a glm object that bypasses glm()'s own check
@@ -166,4 +169,54 @@ test_that("logit unsupported inputs error", {
   expect_error(
     ComputeLogitInfluence(glm_good),
     "binary")
+})
+
+
+test_that("logit with offset works", {
+  set.seed(77)
+  num_obs <- 200
+  df <- GenerateLogitData(num_obs, c(0.5, -0.3))
+  df$off <- rnorm(num_obs, sd=0.5)
+
+  glm_res <- glm(y ~ x1 + x2 + 1, data=df, family=binomial,
+                 offset=off, x=TRUE, y=TRUE)
+
+  model_grads <-
+    ComputeModelInfluence(glm_res) |>
+    AppendTargetRegressorInfluence("x1")
+
+  # Coefficients match
+  AssertNearlyEqual(
+    model_grads$model_fit$param, coef(glm_res), desc="offset param equal")
+
+  # SEs match vcov(glm_res)
+  se_r <- sqrt(diag(vcov(glm_res)))
+  AssertNearlyEqual(
+    model_grads$model_fit$se, se_r, tol=1e-6, desc="offset se equal")
+
+  # RerunFun at original weights reproduces the original fit
+  rerun <- model_grads$RerunFun(glm_res$prior.weights)
+  AssertNearlyEqual(
+    rerun$param, coef(glm_res), tol=1e-6, desc="offset rerun param equal")
+  AssertNearlyEqual(
+    rerun$se, se_r, tol=1e-6, desc="offset rerun se equal")
+
+  # Numerical derivative check for offset model
+  RerunCoeff <- function(w) model_grads$RerunFun(w)$param
+  RerunSe <- function(w) model_grads$RerunFun(w)$se
+  betahat_grad <- suppressWarnings(numDeriv::jacobian(
+    RerunCoeff, model_grads$model_fit$weights))
+  se_grad <- suppressWarnings(numDeriv::jacobian(
+    RerunSe, model_grads$model_fit$weights))
+
+  for (par in model_grads$parameter_names) {
+    fit_ind <- GetParameterIndex(model_grads$model_fit, par)
+    grad_ind <- GetParameterIndex(model_grads, par)
+    AssertNearlyEqual(
+      model_grads$param_grad[grad_ind, ], betahat_grad[fit_ind, ],
+      tol=1e-6, desc=paste("offset param_grad", par))
+    AssertNearlyEqual(
+      model_grads$se_grad[grad_ind, ], se_grad[fit_ind, ],
+      tol=1e-6, desc=paste("offset se_grad", par))
+  }
 })

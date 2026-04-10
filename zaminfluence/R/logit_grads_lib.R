@@ -32,8 +32,14 @@ GetLogitVariables <- function(glm_res) {
   }
   parameter_names <- colnames(x)
 
+  offset <- glm_res$offset
+  if (is.null(offset)) {
+    offset <- rep(0.0, num_obs)
+  }
+
   return(list(x=x, y=y, num_obs=num_obs, w0=w0,
-              betahat=betahat, parameter_names=parameter_names))
+              betahat=betahat, parameter_names=parameter_names,
+              offset=offset))
 }
 
 
@@ -46,6 +52,9 @@ GetLogitVariables <- function(glm_res) {
 #'
 #' @export
 CheckLogitDiagnostics <- function(glm_res) {
+  if (!("x" %in% names(glm_res))) {
+    stop("You must run glm with the argument x=TRUE.")
+  }
   if (!glm_res$converged) {
     stop("glm did not converge. Cannot compute influence functions.")
   }
@@ -84,11 +93,14 @@ GetLogitSEDerivsTorch <- function(logit_vars, keep_inds=NULL, compute_derivs=TRU
   y <- logit_vars$y
   betahat <- logit_vars$betahat
   w0 <- logit_vars$w0
+  offset <- logit_vars$offset
   num_obs <- logit_vars$num_obs
   num_cols <- ncol(x)
 
   # Compute base values: model-based SE from Fisher information
-  p_vec <- as.vector(plogis(x %*% betahat))
+  # Linear predictor is eta = x %*% beta + offset
+  eta <- as.vector(x %*% betahat + offset)
+  p_vec <- plogis(eta)
   pq_vec <- p_vec * (1 - p_vec)
   H_mat <- crossprod(x * sqrt(pq_vec * w0))
   H_inv <- solve(H_mat)
@@ -111,8 +123,12 @@ GetLogitSEDerivsTorch <- function(logit_vars, keep_inds=NULL, compute_derivs=TRU
     beta_t <- torch_tensor(matrix(betahat, ncol=1),
                            requires_grad=TRUE, dtype=torch_double())
     x_t <- torch_tensor(x, requires_grad=FALSE, dtype=torch_double())
+    offset_t <- torch_tensor(matrix(offset, ncol=1),
+                             requires_grad=FALSE, dtype=torch_double())
 
-    p_t <- torch_sigmoid(torch_matmul(x_t, beta_t))   # [n, 1]
+    # Linear predictor: eta = x %*% beta + offset
+    eta_t <- torch_matmul(x_t, beta_t) + offset_t
+    p_t <- torch_sigmoid(eta_t)                         # [n, 1]
     pq_t <- p_t * (1 - p_t)                            # [n, 1]
     x_weighted <- x_t * torch_sqrt(pq_t * w_t)         # [n, p]
     H_t <- torch_matmul(x_weighted$transpose(2, 1), x_weighted)  # [p, p]
@@ -146,12 +162,13 @@ GetLogitSEDerivsTorch <- function(logit_vars, keep_inds=NULL, compute_derivs=TRU
 #' @param y The binary response vector.
 #' @param weights The observation weights.
 #' @param parameter_names The names of the parameters.
+#' @param offset Optional offset vector (default: no offset).
 #'
 #' @return A list with betahat, se, parameter_names, and converged.
 #'
 #' @export
-ComputeLogitResults <- function(x, y, weights, parameter_names) {
-  refit <- glm.fit(x=x, y=y, weights=weights, family=binomial())
+ComputeLogitResults <- function(x, y, weights, parameter_names, offset=NULL) {
+  refit <- glm.fit(x=x, y=y, weights=weights, offset=offset, family=binomial())
 
   betahat <- as.numeric(refit$coefficients)
   converged <- refit$converged
@@ -210,9 +227,10 @@ ComputeLogitInfluence <- function(glm_res, se_group=NULL, keep_pars=NULL) {
   y <- logit_vars$y
   num_obs <- logit_vars$num_obs
   parameter_names <- logit_vars$parameter_names
+  offset <- logit_vars$offset
 
   RerunFun <- function(weights) {
-    ret_list <- ComputeLogitResults(x, y, weights, parameter_names)
+    ret_list <- ComputeLogitResults(x, y, weights, parameter_names, offset=offset)
     return(ModelFit(
       fit_object=ret_list,
       num_obs=num_obs,
