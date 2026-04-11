@@ -36,13 +36,7 @@ AssertNearlyZero <- function(x, tol=1e-15, desc=NULL) {
 
 
 
-# This is the version of the sandwich covariance that we compute
-vcovWrap <- function(obj, cluster=NULL) {
-  vcovCL(obj, cluster=cluster, type="HC0", cadjust=FALSE)
-}
-
-
-# Wrap vcovWrap so that se_group can be null.
+# Compute the sandwich covariance, allowing se_group to be null.
 GetFitCovariance <- function(fit, se_group=NULL) {
   if (is.null(se_group)) {
     return(vcov(fit))
@@ -118,13 +112,11 @@ GenerateIVRegressionData <- function(num_obs, param_true, num_groups=NULL) {
   x_rot <- diag(x_dim) + rep(0.2, x_dim ^ 2) %>% matrix(nrow=x_dim)
   x <- x %*% x_rot
   x <- x - rep(colMeans(x), each=num_obs)
-  colMeans(x)
 
   z <- rnorm(num_obs * x_dim) %>% matrix(nrow=num_obs)
   z_rot <- diag(x_dim) + rep(0.2, x_dim ^ 2) %>% matrix(nrow=x_dim)
   z <- z %*% z_rot + x
   z <- z - rep(colMeans(z), each=num_obs)
-  colMeans(z)
 
   Project <- function(z, vec) {
       num_obs <- nrow(z)

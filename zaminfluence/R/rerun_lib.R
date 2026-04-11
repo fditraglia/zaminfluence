@@ -64,15 +64,3 @@ PredictForSignals <- function(signals, model_grads, verbose=FALSE) {
   RerunForSignals(signals, model_grads, verbose=verbose, RerunFun=PredictFun)
 }
 
-# Here's the old format:
-#       signals[[target]]$rerun_df <-
-#           as.data.frame(signal) %>%
-#               mutate(
-#                   param_refit=rerun_base_values["param"],
-#                   se_refit=rerun_base_values["se"],
-#                   param_mzse_refit=rerun_base_values["param_mzse"],
-#                   param_pzse_refit=rerun_base_values["param_pzse"],
-#                   param_orig=orig_base_values["param"],
-#                   se_orig=se_orig,
-#                   param_mzse_orig=orig_base_values["param_mzse"],
-#                   param_pzse_orig=orig_base_values["param_pzse"])

@@ -334,9 +334,6 @@ ComputeRegressionInfluence <- function(
   keep_inds <- GetKeepInds(all_par_names, keep_pars)
 
   reg_vars <- GetRegressionVariables(lm_result)
-  # reg_grad_list <- GetRegressionSEDerivs(
-  #   x=reg_vars$x, y=reg_vars$y, beta=reg_vars$betahat,
-  #   w0=reg_vars$w0, se_group=se_group)
   reg_grad_list <- GetIVRegressionSEDerivsTorch(
     iv_vars=reg_vars,
     se_group=se_group,
@@ -394,9 +391,6 @@ ComputeIVRegressionInfluence <- function(
     keep_inds <- GetKeepInds(all_par_names, keep_pars)
 
     iv_vars <- GetIVVariables(iv_res)
-    # iv_grad_list <- GetIVSEDerivs(
-    #   x=iv_vars$x, z=iv_vars$z, y=iv_vars$y,
-    #   beta=iv_vars$betahat, w0=iv_vars$w0, se_group=se_group)
     iv_grad_list <- GetIVRegressionSEDerivsTorch(
       iv_vars=iv_vars,
       se_group=se_group,
