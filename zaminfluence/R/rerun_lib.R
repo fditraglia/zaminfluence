@@ -42,7 +42,7 @@ RerunForSignals <- function(signals, model_grads, RerunFun=NULL, verbose=FALSE) 
           signal$description, "; skipping rerun.\n")
       }
     }
-    reruns <- map_depth(signals, 2, RerunSignal)
+    reruns <- purrr::map_depth(signals, 2, RerunSignal)
     return(reruns)
 }
 

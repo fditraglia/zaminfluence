@@ -1,6 +1,5 @@
 ######################################################
 # Logistic regression influence functions
-library(torch)
 
 
 # Extract the relevant variables from the output of glm() with family=binomial
@@ -118,22 +117,22 @@ GetLogitSEDerivsTorch <- function(logit_vars, keep_inds=NULL, compute_derivs=TRU
     param_grad_full <- H_inv %*% score_matrix     # [p x n]
 
     # Step 2: SE torch graph with two independent leaves
-    w_t <- torch_tensor(matrix(w0, ncol=1),
-                        requires_grad=TRUE, dtype=torch_double())
-    beta_t <- torch_tensor(matrix(betahat, ncol=1),
-                           requires_grad=TRUE, dtype=torch_double())
-    x_t <- torch_tensor(x, requires_grad=FALSE, dtype=torch_double())
-    offset_t <- torch_tensor(matrix(offset, ncol=1),
-                             requires_grad=FALSE, dtype=torch_double())
+    w_t <- torch::torch_tensor(matrix(w0, ncol=1),
+                        requires_grad=TRUE, dtype=torch::torch_double())
+    beta_t <- torch::torch_tensor(matrix(betahat, ncol=1),
+                           requires_grad=TRUE, dtype=torch::torch_double())
+    x_t <- torch::torch_tensor(x, requires_grad=FALSE, dtype=torch::torch_double())
+    offset_t <- torch::torch_tensor(matrix(offset, ncol=1),
+                             requires_grad=FALSE, dtype=torch::torch_double())
 
     # Linear predictor: eta = x %*% beta + offset
-    eta_t <- torch_matmul(x_t, beta_t) + offset_t
-    p_t <- torch_sigmoid(eta_t)                         # [n, 1]
+    eta_t <- torch::torch_matmul(x_t, beta_t) + offset_t
+    p_t <- torch::torch_sigmoid(eta_t)                         # [n, 1]
     pq_t <- p_t * (1 - p_t)                            # [n, 1]
-    x_weighted <- x_t * torch_sqrt(pq_t * w_t)         # [n, p]
-    H_t <- torch_matmul(x_weighted$transpose(2, 1), x_weighted)  # [p, p]
-    se_cov_t <- torch_inverse(H_t)
-    SE_t <- torch_sqrt(torch_diag(se_cov_t))            # [p]
+    x_weighted <- x_t * torch::torch_sqrt(pq_t * w_t)         # [n, p]
+    H_t <- torch::torch_matmul(x_weighted$transpose(2, 1), x_weighted)  # [p, p]
+    se_cov_t <- torch::torch_inverse(H_t)
+    SE_t <- torch::torch_sqrt(torch::torch_diag(se_cov_t))            # [p]
 
     # Step 3: Two-pass autograd + chain rule
     betahat_infl_mat <- param_grad_full[keep_inds, , drop=FALSE]

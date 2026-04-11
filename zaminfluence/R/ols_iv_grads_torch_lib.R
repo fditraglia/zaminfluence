@@ -1,6 +1,5 @@
-######################################################3
+######################################################
 # Ordinary least squares
-library(torch)
 
 
 ValidateKeepInds <- function(keep_inds, x) {
@@ -78,7 +77,7 @@ GetIVVariables <- function(iv_res) {
 TorchGroupedAggregate <- function(src_mat, inds) {
     # https://discuss.pytorch.org/t/groupby-aggregate-mean-in-pytorch/45335
     max_ind <- inds$max() %>% as.integer()
-    zero_mat <- torch_tensor(
+    zero_mat <- torch::torch_tensor(
         matrix(0, nrow=max_ind, ncol=src_mat$shape[2]),
         dtype=src_mat$dtype)
     inds_rep <- inds[["repeat"]](list(1, src_mat$shape[2]))
@@ -110,23 +109,22 @@ DefineTorchVars <- function(iv_vars) {
       stopifnot(ncol(iv_vars$z) == num_cols)
     }
 
-    x <- torch_tensor(iv_vars$x, requires_grad=FALSE, dtype=torch_double())
+    x <- torch::torch_tensor(iv_vars$x, requires_grad=FALSE, dtype=torch::torch_double())
     if (iv_vars$z_equals_x) {
       z <- x
     } else {
-      z <- torch_tensor(iv_vars$z, requires_grad=FALSE, dtype=torch_double())
+      z <- torch::torch_tensor(iv_vars$z, requires_grad=FALSE, dtype=torch::torch_double())
     }
-    y <- torch_tensor(matrix(iv_vars$y, ncol=1),
-                      requires_grad=FALSE, dtype=torch_double())
-    w <- torch_tensor(matrix(iv_vars$w0, ncol=1),
-                      requires_grad=TRUE, dtype=torch_double())
+    y <- torch::torch_tensor(matrix(iv_vars$y, ncol=1),
+                      requires_grad=FALSE, dtype=torch::torch_double())
+    w <- torch::torch_tensor(matrix(iv_vars$w0, ncol=1),
+                      requires_grad=TRUE, dtype=torch::torch_double())
 
     z_w <- z * w
     z_w_t <- z_w$transpose(2, 1)
-    zwx <- torch_matmul(z_w_t, x)
-    #t(iv_vars$z) %*% iv_vars$z - zwz # Why 1e-6?
-    betahat <- torch::linalg_solve(zwx, torch_matmul(z_w_t, y))
-    eps <- y - torch_matmul(x, betahat)
+    zwx <- torch::torch_matmul(z_w_t, x)
+    betahat <- torch::linalg_solve(zwx, torch::torch_matmul(z_w_t, y))
+    eps <- y - torch::torch_matmul(x, betahat)
 
     return(list(
         num_obs=num_obs,
@@ -153,36 +151,36 @@ GetIVRegressionSEDerivsTorch <- function(
     if (!is.null(se_group)) {
         tv$score_mat <- tv$z * tv$eps * tv$w
         tv$se_group <-
-            torch_tensor(
+            torch::torch_tensor(
                 as.integer(factor(se_group)) %>%
                 matrix(ncol=1),
-                dtype=torch_int64())
+                dtype=torch::torch_int64())
         tv$score_sum <- TorchGroupedAggregate(
           src_mat=tv$score_mat, inds=tv$se_group)
         tv$s_mat <- tv$score_sum - tv$score_sum$mean(dim=1, keepdim=TRUE)
 
         num_groups <- tv$s_mat$shape[1]
-        tv$v_mat <- torch_matmul(tv$s_mat$transpose(2, 1), tv$s_mat) / num_groups
+        tv$v_mat <- torch::torch_matmul(tv$s_mat$transpose(2, 1), tv$s_mat) / num_groups
 
-        tv$zwx_inv_vmat <- linalg_solve(tv$zwx, tv$v_mat)
-        tv$se_cov_mat <- linalg_solve(
-          tv$zwx, torch_transpose(tv$zwx_inv_vmat, 2, 1)) * num_groups
+        tv$zwx_inv_vmat <- torch::linalg_solve(tv$zwx, tv$v_mat)
+        tv$se_cov_mat <- torch::linalg_solve(
+          tv$zwx, torch::torch_transpose(tv$zwx_inv_vmat, 2, 1)) * num_groups
     } else {
-        tv$sig2_hat <- torch_sum(
+        tv$sig2_hat <- torch::torch_sum(
           tv$w * (tv$eps ** 2)) / (tv$num_obs - tv$num_cols)
 
         if (iv_vars$z_equals_x) {
             # Regression is when Z == X and we can save some computation
-            tv$se_cov_mat <- tv$sig2_hat * torch_inverse(tv$zwx)
+            tv$se_cov_mat <- tv$sig2_hat * torch::torch_inverse(tv$zwx)
         } else {
             # IV is when Z != X
-            tv$zwz <- torch_matmul(tv$zw_t, tv$z)
-            tv$zwx_inv_zwz <- linalg_solve(tv$zwx, tv$zwz)
-            tv$se_cov_mat <- tv$sig2_hat * linalg_solve(
+            tv$zwz <- torch::torch_matmul(tv$zw_t, tv$z)
+            tv$zwx_inv_zwz <- torch::linalg_solve(tv$zwx, tv$zwz)
+            tv$se_cov_mat <- tv$sig2_hat * torch::linalg_solve(
               tv$zwx, tv$zwx_inv_zwz$transpose(2, 1))
         }
     }
-    tv$betahat_se <- torch_sqrt(torch_diag(tv$se_cov_mat))
+    tv$betahat_se <- torch::torch_sqrt(torch::torch_diag(tv$se_cov_mat))
 
     return_list <- list(
         tv=tv,

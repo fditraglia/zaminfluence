@@ -1,5 +1,3 @@
-library(purrr)
-
 
 # Define an ParameterInferenceInfluence S3 object.
 new_ParameterInferenceInfluence <- function(
@@ -151,7 +149,7 @@ AppendTargetRegressorInfluence <- function(model_grads, target_parameter,
 #' @export
 GetBaseValues <- function(param_infl) {
   stopifnot(class(param_infl) == "ParameterInferenceInfluence")
-  return(map_dbl(param_infl[param_infl$qoi_names], ~ .$base_value))
+  return(purrr::map_dbl(param_infl[param_infl$qoi_names], ~ .$base_value))
 }
 
 

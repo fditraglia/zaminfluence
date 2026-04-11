@@ -1,11 +1,3 @@
-#library(broom)
-library(dplyr)
-library(ggplot2)
-library(gridExtra)
-library(reticulate)
-library(latex2exp)
-library(testthat)
-
 
 StopIfNotNumericScalar <- function(x) {
   stopifnot(is.numeric(x))
@@ -20,7 +12,7 @@ AssertNearlyEqual <- function(x, y, tol=1e-9, desc=NULL) {
   } else {
     info_str <- sprintf("%s: %e > %e", desc, diff_norm, tol)
   }
-  expect_true(diff_norm < tol, info=info_str)
+  testthat::expect_true(diff_norm < tol, info=info_str)
 }
 
 
@@ -31,7 +23,7 @@ AssertNearlyZero <- function(x, tol=1e-15, desc=NULL) {
   } else {
     info_str <- sprintf("%s: %e > %e", desc, x_norm, tol)
   }
-  expect_true(x_norm < tol, info=info_str)
+  testthat::expect_true(x_norm < tol, info=info_str)
 }
 
 
@@ -41,7 +33,7 @@ GetFitCovariance <- function(fit, se_group=NULL) {
   if (is.null(se_group)) {
     return(vcov(fit))
   } else {
-    return(vcovCL(fit, cluster=se_group, type="HC0", cadjust=FALSE))
+    return(sandwich::vcovCL(fit, cluster=se_group, type="HC0", cadjust=FALSE))
   }
 }
 
@@ -145,7 +137,7 @@ GenerateIVRegressionData <- function(num_obs, param_true, num_groups=NULL) {
   z_names <- sprintf("z%d", 1:x_dim)
   names(z_df) <- z_names
 
-  df <- bind_cols(x_df, z_df) %>% mutate(y=!!y)
+  df <- dplyr::bind_cols(x_df, z_df) %>% dplyr::mutate(y=!!y)
 
   if (!is.null(num_groups)) {
     df$se_group <- re_df$se_group

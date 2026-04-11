@@ -1,9 +1,3 @@
-library(tidyr)
-library(purrr)
-library(latex2exp)
-library(ggplot2)
-library(tibble)
-
 
 ################################################################################
 # Plotting and visualization functions
@@ -27,11 +21,11 @@ GetModelFitInferenceDataframe <- function(model_fit, param_infls) {
         GetInferenceQOIs(param=model_fit$param[target_index],
                          se=model_fit$se[target_index],
                          sig_num_ses=sig_num_ses) %>%
-            purrr::imap_dfr(~ data.frame(metric=.y, value=.x))
+            purrr::imap_dfr(\(x, y) data.frame(metric=y, value=x))
     }
 
     summary_df <- data.frame()
-    AppendRow <- function(row) bind_rows(summary_df, row)
+    AppendRow <- function(row) dplyr::bind_rows(summary_df, row)
     for (param_name in names(param_infls)) {
         param_infl <- param_infls[[param_name]]
         # We checked above that each parameter name is found.
@@ -41,7 +35,7 @@ GetModelFitInferenceDataframe <- function(model_fit, param_infls) {
                 model_fit=model_fit,
                 target_index=target_index,
                 sig_num_ses=param_infl$sig_num_ses) %>%
-            mutate(param_name=param_name) %>%
+            dplyr::mutate(param_name=param_name) %>%
             AppendRow()
     }
     return(summary_df)
@@ -74,26 +68,26 @@ ValidateSignalsAndReruns <- function(signals, reruns) {
 GetSignalsAndRerunsDataframe <- function(signals, reruns, model_grads) {
   ValidateSignalsAndReruns(signals, reruns)
 
-  reruns_dfs <- map_depth(
-    reruns, 2, ~ GetModelFitInferenceDataframe(., model_grads$param_infls))
+  reruns_dfs <- purrr::map_depth(
+    reruns, 2, \(x) GetModelFitInferenceDataframe(x, model_grads$param_infls))
 
   rerun_df <-
-      tibble(list=reruns_dfs) %>%
-      mutate(target_param_name=names(list)) %>%
-      unnest_longer(col=list, indices_to="target_signal") %>%
-      unnest(list)
+      tibble::tibble(list=reruns_dfs) %>%
+      dplyr::mutate(target_param_name=names(list)) %>%
+      tidyr::unnest_longer(col=list, indices_to="target_signal") %>%
+      tidyr::unnest(list)
 
   signal_dfs <-
-      map_depth(signals, 2, ~ data.frame(
-          description=.$description, n_drop=.$apip$n, prop_drop=.$apip$prop,
-          target_qoi=.$qoi$name))
+      purrr::map_depth(signals, 2, \(x) data.frame(
+          description=x$description, n_drop=x$apip$n, prop_drop=x$apip$prop,
+          target_qoi=x$qoi$name))
   signal_df <-
-      tibble(list=signal_dfs) %>%
-      mutate(target_param_name=names(list)) %>%
-      unnest_longer(col=list, indices_to="target_signal") %>%
-      unnest(list)
+      tibble::tibble(list=signal_dfs) %>%
+      dplyr::mutate(target_param_name=names(list)) %>%
+      tidyr::unnest_longer(col=list, indices_to="target_signal") %>%
+      tidyr::unnest(list)
 
-  return(inner_join(
+  return(dplyr::inner_join(
     rerun_df, signal_df, by=c("target_param_name", "target_signal")))
 }
 
@@ -122,7 +116,7 @@ GetSortedInfluenceDf <- function(param_infl, sorting_qoi_name,
         }
         qoi_df <- data.frame(
             num_dropped=c(0, 1:length(ordered_inds))) %>%
-            mutate(prop_dropped=num_dropped /
+            dplyr::mutate(prop_dropped=num_dropped /
                        qoi_for_sorting[[infl_sign]]$num_obs,
                    sign=infl_sign)
         for (qoi_name in c("param", "param_mzse", "param_pzse")) {
@@ -134,8 +128,8 @@ GetSortedInfluenceDf <- function(param_infl, sorting_qoi_name,
     }
 
     qoi_df <-
-        bind_rows(GetQOIDf("pos"), GetQOIDf("neg")) %>%
-        mutate(sorted_by=sorting_qoi_name)
+        dplyr::bind_rows(GetQOIDf("pos"), GetQOIDf("neg")) %>%
+        dplyr::mutate(sorted_by=sorting_qoi_name)
 
     return(qoi_df)
 }
@@ -162,40 +156,40 @@ PlotInfluenceDf <- function(influence_df, signal, rerun_vals=NULL,
             influence_df$prop_dropped
 
     if (!is.null(apip_max)) {
-      influence_df <- filter(influence_df, alpha  <= apip_max)
+      influence_df <- dplyr::filter(influence_df, alpha  <= apip_max)
     }
 
-    plot <- ggplot(influence_df, aes(x=alpha))
+    plot <- ggplot2::ggplot(influence_df, ggplot2::aes(x=alpha))
     if (include_y_zero) {
         plot <-
             plot +
-            geom_line(aes(y=0.0), col="gray50")
+            ggplot2::geom_line(ggplot2::aes(y=0.0), col="gray50")
     }
 
-    base_param <- filter(influence_df, alpha == 0) %>% pull("param") %>% unique()
+    base_param <- dplyr::filter(influence_df, alpha == 0) %>% dplyr::pull("param") %>% unique()
     stopifnot(length(base_param) == 1)
     plot <-
         plot +
-        geom_line(aes(y=!!base_param), col="blue", lwd=2) +
-        geom_ribbon(aes(
+        ggplot2::geom_line(ggplot2::aes(y=!!base_param), col="blue", lwd=2) +
+        ggplot2::geom_ribbon(ggplot2::aes(
             ymin=param_mzse,
             ymax=param_pzse,
             group=sign),
             fill="blue", color=NA, alpha=0.1) +
-        geom_line(aes(y=param, group=sign), lwd=2)
+        ggplot2::geom_line(ggplot2::aes(y=param, group=sign), lwd=2)
 
     xlab_name <- if (plot_num_dropped)
         "Number of points removed" else "Proportion of points removed"
-    plot <- plot + guides(color="none") + xlab(xlab_name)
+    plot <- plot + ggplot2::guides(color="none") + ggplot2::xlab(xlab_name)
 
     # Plot the signal
     if (signal$apip$success) {
       alpha_type <- if (plot_num_dropped) "n" else "prop"
       alpha <- signal$apip[[alpha_type]]
       if (is.null(apip_max) || (!is.null(apip_max) && alpha <= apip_max)) {
-          plot <- plot + geom_vline(aes(xintercept=!!alpha,
+          plot <- plot + ggplot2::geom_vline(ggplot2::aes(xintercept=!!alpha,
                                         linetype=!!signal$description)) +
-                  guides(linetype=guide_legend(title="Change type"))
+                  ggplot2::guides(linetype=ggplot2::guide_legend(title="Change type"))
       }
     }
 
@@ -203,14 +197,14 @@ PlotInfluenceDf <- function(influence_df, signal, rerun_vals=NULL,
       errorbar_width <- diff(range(influence_df$alpha)) / 50
       plot <-
           plot +
-          geom_errorbar(aes(
+          ggplot2::geom_errorbar(ggplot2::aes(
               x=!!alpha,
               ymin=rerun_vals$param_mzse,
               ymax=rerun_vals$param_pzse),
               data=NULL,
               width=errorbar_width,
               lwd=1.5) +
-          geom_point(aes(x=!!alpha, y=rerun_vals$param),
+          ggplot2::geom_point(ggplot2::aes(x=!!alpha, y=rerun_vals$param),
                      data=NULL,
                      shape=8)
     }
