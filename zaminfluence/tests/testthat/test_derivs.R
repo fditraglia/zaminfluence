@@ -25,11 +25,6 @@
 # and its complex step derivatives agree with torch's autograd, both the
 # formulas and the gradients are validated.
 
-library(AER)
-library(zaminfluence)
-library(testthat)
-
-context("zaminfluence")
 
 test_that("derivatives work", {
   set.seed(302)

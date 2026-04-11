@@ -1,14 +1,4 @@
 
-library(AER)
-library(zaminfluence)
-library(testthat)
-library(tidyverse)
-library(purrr)
-
-context("zaminfluence")
-
-
-
 test_that("GetWeightVector_correct", {
   num_obs <- 23
   w <- runif(num_obs) + 0.5
@@ -88,7 +78,7 @@ test_that("NAN_in_APIP_issue25", {
   # Get influence and reruns.
   # Derivatives are only computed for keep_pars, which can be in any order.
   model_grads <-
-      ComputeModelInfluence(fit_object) %>%
+      ComputeModelInfluence(fit_object) |>
       AppendTargetRegressorInfluence("x1")
   signals <- GetInferenceSignals(model_grads)
 

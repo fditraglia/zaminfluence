@@ -1,12 +1,4 @@
-#!/usr/bin/env Rscript
-
 # Tests for logistic regression influence functions.
-
-library(zaminfluence)
-library(testthat)
-library(numDeriv)
-
-context("logit")
 
 
 test_that("logit base values match glm", {

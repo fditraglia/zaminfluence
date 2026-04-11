@@ -1,28 +1,17 @@
-#!/usr/bin/env Rscript
-
 # Test the manually computed OLS and IV solutions in ols_iv_grads_lib.R
-
-library(AER)
-library(zaminfluence)
-library(sandwich)
-library(testthat)
-library(tidyverse)
-library(numDeriv)
-
-context("zaminfluence")
 
 # Test that ComputeModelInfluence, AppendTargetRegressorInfluence, and
 # RerunFun give the same answers as R on the original data.
 TestConfiguration <- function(fit_object, se_group) {
   model_grads <-
-    ComputeModelInfluence(fit_object, se_group=se_group) %>%
+    ComputeModelInfluence(fit_object, se_group=se_group) |>
     AppendTargetRegressorInfluence("x1")
 
   # Test that the coefficient estimates and standard errors in model_grads
   # match what we expect from R.
   AssertNearlyEqual(
     model_grads$model_fit$param, coefficients(fit_object), desc="param equal")
-  se_r <- GetFitCovariance(fit_object, se_group) %>% diag() %>% sqrt()
+  se_r <- GetFitCovariance(fit_object, se_group) |> diag() |> sqrt()
   AssertNearlyEqual(
     model_grads$model_fit$se, se_r, desc="std error equal")
   testthat::expect_equivalent(
@@ -173,12 +162,12 @@ test_that("rerun works", {
       }
       if (use_iv) {
         new_fit <-
-          ivreg(y ~ x1 + 1 | z1 + 1, data=df %>%
+          ivreg(y ~ x1 + 1 | z1 + 1, data=df |>
             mutate(w=!!new_w), x=TRUE, y=TRUE, weights=w)
         zam_fit <- ComputeIVRegressionResults(iv_fit, new_w, se_group=se_group)
       } else {
         new_fit <-
-          lm(y ~ x1 + 1, data=df %>%
+          lm(y ~ x1 + 1, data=df |>
             mutate(w=!!new_w), x=TRUE, y=TRUE, weights=w)
         zam_fit <- ComputeRegressionResults(reg_fit, new_w, se_group=se_group)
       }

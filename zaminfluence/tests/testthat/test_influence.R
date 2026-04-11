@@ -1,16 +1,6 @@
-#!/usr/bin/env Rscript
-#
 # Test the manual derivatives using numerical differentiation.
 # Effectively, this tests GetIVSEDerivs and GetRegressionSEDerivs with
 # both grouped and ungrouped standard errors.
-
-library(AER)
-library(zaminfluence)
-library(testthat)
-library(tidyverse)
-library(purrr)
-
-context("zaminfluence")
 
 GenerateTestInstance <- function(do_iv, do_grouping) {
     x_dim <- 1
@@ -49,7 +39,7 @@ GenerateTestInstance <- function(do_iv, do_grouping) {
     se_group <- if (do_grouping) df$se_group else NULL
 
     model_grads <-
-        ComputeModelInfluence(fit_object) %>%
+        ComputeModelInfluence(fit_object) |>
         AppendTargetRegressorInfluence("x1")
     signals <- GetInferenceSignals(model_grads)
 
@@ -85,7 +75,7 @@ TestPredictions <- function(
       target_parameter=param_infl$target_parameter,
       sig_num_ses=param_infl$sig_num_ses)
     diff_rerun <-
-      unlist(rerun_base_values)[names(base_values)] %>% as.numeric() -
+      unlist(rerun_base_values)[names(base_values)] |> as.numeric() -
       base_values[names(base_values)]
     names(diff_rerun) <- names(base_values)
 
@@ -228,8 +218,8 @@ test_that("influence_computations_correct", {
     for (do_grouping in c(TRUE, FALSE)) {
       sprintf("Running %s %s",
           if (do_iv) "IV" else "OLS",
-          if (do_grouping) "grouped" else "ungrouped", "\n") %>% cat()
-      GenerateTestInstance(do_iv, do_grouping) %>%
+          if (do_grouping) "grouped" else "ungrouped", "\n") |> cat()
+      GenerateTestInstance(do_iv, do_grouping) |>
         TestInfluence()
     }
   }

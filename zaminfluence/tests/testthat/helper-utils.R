@@ -1,3 +1,7 @@
+# Load packages needed by tests but not by the package itself
+library(dplyr)
+library(ivreg)
+
 AssertNearlyEqual <- function(x, y, tol=1e-9, desc=NULL) {
   diff_norm <- max(abs(x - y))
   if (is.null(desc)) {
