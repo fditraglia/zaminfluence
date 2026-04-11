@@ -141,7 +141,6 @@ DefineTorchVars <- function(iv_vars) {
 }
 
 
-#'@export
 GetIVRegressionSEDerivsTorch <- function(
       iv_vars, se_group=NULL, keep_inds=NULL, compute_derivs=TRUE) {
 
@@ -235,7 +234,6 @@ GetIVRegressionSEDerivsTorch <- function(
 #'
 #' @return `r docs$rerun_return`
 #'
-#' @export
 ComputeRegressionResults <- function(lm_result, weights=NULL, se_group=NULL) {
   reg_vars <- GetRegressionVariables(lm_result)
   if (!is.null(weights)) {
@@ -270,7 +268,6 @@ ComputeRegressionResults <- function(lm_result, weights=NULL, se_group=NULL) {
 #' @param se_group `r docs$se_group`
 #'
 #' @return A list containing the regression coefficients and standard errors.
-#' @export
 ComputeIVRegressionResults <- function(iv_res, weights=NULL, se_group=NULL) {
   iv_vars <- GetIVVariables(iv_res)
   if (!is.null(weights)) {
