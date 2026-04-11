@@ -76,7 +76,7 @@ GetIVVariables <- function(iv_res) {
 
 TorchGroupedAggregate <- function(src_mat, inds) {
     # https://discuss.pytorch.org/t/groupby-aggregate-mean-in-pytorch/45335
-    max_ind <- inds$max() %>% as.integer()
+    max_ind <- inds$max() |> as.integer()
     zero_mat <- torch::torch_tensor(
         matrix(0, nrow=max_ind, ncol=src_mat$shape[2]),
         dtype=src_mat$dtype)
@@ -85,8 +85,8 @@ TorchGroupedAggregate <- function(src_mat, inds) {
     return(agg_mat)
 }
 
-# inds <- torch_tensor(c(1, 1, 3, 2, 2) %>% matrix(5, 1), dtype=torch_int64())
-# src <- torch_tensor(c(rep(0.1, 5), rep(0.2, 5)) %>% matrix(5, 2))
+# inds <- torch_tensor(c(1, 1, 3, 2, 2) |> matrix(5, 1), dtype=torch_int64())
+# src <- torch_tensor(c(rep(0.1, 5), rep(0.2, 5)) |> matrix(5, 2))
 # TorchGroupedAggregate(src, inds)
 
 
@@ -152,7 +152,7 @@ GetIVRegressionSEDerivsTorch <- function(
         tv$score_mat <- tv$z * tv$eps * tv$w
         tv$se_group <-
             torch::torch_tensor(
-                as.integer(factor(se_group)) %>%
+                as.integer(factor(se_group)) |>
                 matrix(ncol=1),
                 dtype=torch::torch_int64())
         tv$score_sum <- TorchGroupedAggregate(
@@ -194,7 +194,7 @@ GetIVRegressionSEDerivsTorch <- function(
           d <- keep_inds[di]
           betahat_infl_mat[di, ] <-
               torch::autograd_grad(
-                  tv$betahat[d], tv$w, retain_graph=TRUE)[[1]] %>% as.numeric()
+                  tv$betahat[d], tv$w, retain_graph=TRUE)[[1]] |> as.numeric()
       }
 
       # standard errors
@@ -204,7 +204,7 @@ GetIVRegressionSEDerivsTorch <- function(
           se_infl_mat[di, ] <-
               torch::autograd_grad(
                   tv$betahat_se[d],
-                  tv$w, retain_graph=TRUE)[[1]] %>% as.numeric()
+                  tv$w, retain_graph=TRUE)[[1]] |> as.numeric()
       }
 
       return_list$betahat_infl_mat <- betahat_infl_mat
@@ -310,7 +310,7 @@ GetKeepInds <- function(coeff_names, keep_pars=NULL) {
         stop(sprintf("Parameters %s are not present in model", paste(missing_pars, collapse=", ")))
     }
     inds <- setNames(1:length(coeff_names), coeff_names)
-    return(inds[keep_pars] %>% unname())
+    return(inds[keep_pars] |> unname())
 }
 
 

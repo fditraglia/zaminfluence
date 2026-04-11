@@ -142,7 +142,7 @@ GetAPIPForQOI <- function(qoi, signal) {
     # we know that infl_cumsum is increasing?
     n_drop <- approx(x=-1 * c(0, qoi_sign$infl_cumsum),
                      y=c(0, n_vec),
-                     xout=signal)$y %>% ceiling()
+                     xout=signal)$y |> ceiling()
     if (is.na(n_drop)) {
         drop_inds <- NA
     } else if (n_drop == 0) {

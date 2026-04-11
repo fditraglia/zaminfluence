@@ -20,7 +20,7 @@ GetModelFitInferenceDataframe <- function(model_fit, param_infls) {
       function(model_fit, target_index, sig_num_ses) {
         GetInferenceQOIs(param=model_fit$param[target_index],
                          se=model_fit$se[target_index],
-                         sig_num_ses=sig_num_ses) %>%
+                         sig_num_ses=sig_num_ses) |>
             purrr::imap_dfr(\(x, y) data.frame(metric=y, value=x))
     }
 
@@ -34,8 +34,8 @@ GetModelFitInferenceDataframe <- function(model_fit, param_infls) {
             GetParameterInferenceDataframe(
                 model_fit=model_fit,
                 target_index=target_index,
-                sig_num_ses=param_infl$sig_num_ses) %>%
-            dplyr::mutate(param_name=param_name) %>%
+                sig_num_ses=param_infl$sig_num_ses) |>
+            dplyr::mutate(param_name=param_name) |>
             AppendRow()
     }
     return(summary_df)
@@ -72,9 +72,9 @@ GetSignalsAndRerunsDataframe <- function(signals, reruns, model_grads) {
     reruns, 2, \(x) GetModelFitInferenceDataframe(x, model_grads$param_infls))
 
   rerun_df <-
-      tibble::tibble(list=reruns_dfs) %>%
-      dplyr::mutate(target_param_name=names(list)) %>%
-      tidyr::unnest_longer(col=list, indices_to="target_signal") %>%
+      tibble::tibble(list=reruns_dfs) |>
+      dplyr::mutate(target_param_name=names(list)) |>
+      tidyr::unnest_longer(col=list, indices_to="target_signal") |>
       tidyr::unnest(list)
 
   signal_dfs <-
@@ -82,9 +82,9 @@ GetSignalsAndRerunsDataframe <- function(signals, reruns, model_grads) {
           description=x$description, n_drop=x$apip$n, prop_drop=x$apip$prop,
           target_qoi=x$qoi$name))
   signal_df <-
-      tibble::tibble(list=signal_dfs) %>%
-      dplyr::mutate(target_param_name=names(list)) %>%
-      tidyr::unnest_longer(col=list, indices_to="target_signal") %>%
+      tibble::tibble(list=signal_dfs) |>
+      dplyr::mutate(target_param_name=names(list)) |>
+      tidyr::unnest_longer(col=list, indices_to="target_signal") |>
       tidyr::unnest(list)
 
   return(dplyr::inner_join(
@@ -115,7 +115,7 @@ GetSortedInfluenceDf <- function(param_infl, sorting_qoi_name,
             ordered_inds <- ordered_inds[1:max_num_obs]
         }
         qoi_df <- data.frame(
-            num_dropped=c(0, 1:length(ordered_inds))) %>%
+            num_dropped=c(0, 1:length(ordered_inds))) |>
             dplyr::mutate(prop_dropped=num_dropped /
                        qoi_for_sorting[[infl_sign]]$num_obs,
                    sign=infl_sign)
@@ -128,7 +128,7 @@ GetSortedInfluenceDf <- function(param_infl, sorting_qoi_name,
     }
 
     qoi_df <-
-        dplyr::bind_rows(GetQOIDf("pos"), GetQOIDf("neg")) %>%
+        dplyr::bind_rows(GetQOIDf("pos"), GetQOIDf("neg")) |>
         dplyr::mutate(sorted_by=sorting_qoi_name)
 
     return(qoi_df)
@@ -166,7 +166,7 @@ PlotInfluenceDf <- function(influence_df, signal, rerun_vals=NULL,
             ggplot2::geom_line(ggplot2::aes(y=0.0), col="gray50")
     }
 
-    base_param <- dplyr::filter(influence_df, alpha == 0) %>% dplyr::pull("param") %>% unique()
+    base_param <- dplyr::filter(influence_df, alpha == 0) |> dplyr::pull("param") |> unique()
     stopifnot(length(base_param) == 1)
     plot <-
         plot +

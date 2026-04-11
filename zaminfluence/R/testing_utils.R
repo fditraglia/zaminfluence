@@ -100,13 +100,13 @@ GenerateIVRegressionData <- function(num_obs, param_true, num_groups=NULL) {
   # Simulate some IV data
 
   x_dim <- length(param_true)
-  x <- rnorm(num_obs * x_dim) %>% matrix(nrow=num_obs)
-  x_rot <- diag(x_dim) + rep(0.2, x_dim ^ 2) %>% matrix(nrow=x_dim)
+  x <- rnorm(num_obs * x_dim) |> matrix(nrow=num_obs)
+  x_rot <- diag(x_dim) + rep(0.2, x_dim ^ 2) |> matrix(nrow=x_dim)
   x <- x %*% x_rot
   x <- x - rep(colMeans(x), each=num_obs)
 
-  z <- rnorm(num_obs * x_dim) %>% matrix(nrow=num_obs)
-  z_rot <- diag(x_dim) + rep(0.2, x_dim ^ 2) %>% matrix(nrow=x_dim)
+  z <- rnorm(num_obs * x_dim) |> matrix(nrow=num_obs)
+  z_rot <- diag(x_dim) + rep(0.2, x_dim ^ 2) |> matrix(nrow=x_dim)
   z <- z %*% z_rot + x
   z <- z - rep(colMeans(z), each=num_obs)
 
@@ -137,7 +137,8 @@ GenerateIVRegressionData <- function(num_obs, param_true, num_groups=NULL) {
   z_names <- sprintf("z%d", 1:x_dim)
   names(z_df) <- z_names
 
-  df <- dplyr::bind_cols(x_df, z_df) %>% dplyr::mutate(y=!!y)
+  df <- dplyr::bind_cols(x_df, z_df)
+  df$y <- as.vector(y)
 
   if (!is.null(num_groups)) {
     df$se_group <- re_df$se_group
