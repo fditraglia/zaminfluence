@@ -1,11 +1,11 @@
 
-StopIfNotNumericScalar <- function(x) {
+stop_if_not_numeric_scalar <- function(x) {
   stopifnot(is.numeric(x))
   stopifnot(length(x) == 1)
 }
 
 
-GenerateRandomEffects <- function(num_obs, num_groups=NULL) {
+generate_random_effects <- function(num_obs, num_groups=NULL) {
   if (!is.null(num_groups)) {
     # Add random effects.  se_group must be zero-indexed.
     se_group <- floor(num_groups * runif(num_obs))
@@ -19,7 +19,7 @@ GenerateRandomEffects <- function(num_obs, num_groups=NULL) {
 }
 
 
-GenerateRegressionData <- function(num_obs, param_true, x=NULL, num_groups=NULL) {
+generate_regression_data <- function(num_obs, param_true, x=NULL, num_groups=NULL) {
   x_dim <- length(param_true)
   if (is.null(x)) {
     x <- matrix(runif(num_obs * x_dim), num_obs, x_dim)
@@ -30,7 +30,7 @@ GenerateRegressionData <- function(num_obs, param_true, x=NULL, num_groups=NULL)
     }
   }
   eps <- rnorm(num_obs)
-  re_df <- GenerateRandomEffects(num_obs, num_groups)
+  re_df <- generate_random_effects(num_obs, num_groups)
   y <- x %*% param_true + eps + re_df$re
   df <- data.frame(x)
   names(df)  <- paste0("x", 1:x_dim)
@@ -44,7 +44,7 @@ GenerateRegressionData <- function(num_obs, param_true, x=NULL, num_groups=NULL)
 }
 
 
-GenerateLogitData <- function(num_obs, param_true, x=NULL) {
+generate_logit_data <- function(num_obs, param_true, x=NULL) {
   x_dim <- length(param_true)
   if (is.null(x)) {
     x <- matrix(rnorm(num_obs * x_dim), num_obs, x_dim)
@@ -59,7 +59,7 @@ GenerateLogitData <- function(num_obs, param_true, x=NULL) {
 }
 
 
-GenerateIVRegressionData <- function(num_obs, param_true, num_groups=NULL) {
+generate_iv_regression_data <- function(num_obs, param_true, num_groups=NULL) {
   # Simulate some IV data
 
   x_dim <- length(param_true)
@@ -84,7 +84,7 @@ GenerateIVRegressionData <- function(num_obs, param_true, num_groups=NULL) {
       return(vec - Project(z, vec))
   }
 
-  re_df <- GenerateRandomEffects(num_obs, num_groups)
+  re_df <- generate_random_effects(num_obs, num_groups)
 
   sigma_true <- 2.0
   eps_base <- rnorm(num_obs) + rowSums(x) + re_df$re

@@ -3,7 +3,7 @@
 
 
 # Extract the relevant variables from the output of glm() with family=binomial
-GetLogitVariables <- function(glm_res) {
+get_logit_variables <- function(glm_res) {
   if (!(("x" %in% names(glm_res)) &
         ("y" %in% names(glm_res)))) {
     stop("You must run glm with the arguments x=TRUE and y=TRUE.")
@@ -50,7 +50,7 @@ GetLogitVariables <- function(glm_res) {
 #'   number, and minimum of p and 1-p.
 #'
 #' @export
-CheckLogitDiagnostics <- function(glm_res) {
+check_logit_diagnostics <- function(glm_res) {
   if (!("x" %in% names(glm_res))) {
     stop("You must run glm with the argument x=TRUE.")
   }
@@ -84,9 +84,9 @@ CheckLogitDiagnostics <- function(glm_res) {
 
 # Compute logit SE derivatives using IFT for param_grad and
 # two-pass autograd for se_grad.
-GetLogitSEDerivsTorch <- function(logit_vars, keep_inds=NULL, compute_derivs=TRUE) {
+get_logit_se_derivs_torch <- function(logit_vars, keep_inds=NULL, compute_derivs=TRUE) {
 
-  keep_inds <- ValidateKeepInds(keep_inds, logit_vars$x)
+  keep_inds <- validate_keep_inds(keep_inds, logit_vars$x)
 
   x <- logit_vars$x
   y <- logit_vars$y
@@ -166,7 +166,7 @@ GetLogitSEDerivsTorch <- function(logit_vars, keep_inds=NULL, compute_derivs=TRU
 #' @return A list with betahat, se, parameter_names, and converged.
 #'
 #' @export
-ComputeLogitResults <- function(x, y, weights, parameter_names, offset=NULL) {
+compute_logit_results <- function(x, y, weights, parameter_names, offset=NULL) {
   refit <- glm.fit(x=x, y=y, weights=weights, offset=offset, family=binomial())
 
   betahat <- as.numeric(refit$coefficients)
@@ -201,22 +201,22 @@ ComputeLogitResults <- function(x, y, weights, parameter_names, offset=NULL) {
 #' @return `r docs$grad_return`
 #'
 #' @export
-ComputeLogitInfluence <- function(glm_res, se_group=NULL, keep_pars=NULL) {
+compute_logit_influence <- function(glm_res, se_group=NULL, keep_pars=NULL) {
 
   if (!is.null(se_group)) {
     stop("Clustered SEs for logit not yet implemented.")
   }
 
-  logit_vars <- GetLogitVariables(glm_res)
-  CheckLogitDiagnostics(glm_res)
+  logit_vars <- get_logit_variables(glm_res)
+  check_logit_diagnostics(glm_res)
 
   all_par_names <- logit_vars$parameter_names
   if (is.null(keep_pars)) {
     keep_pars <- all_par_names
   }
-  keep_inds <- GetKeepInds(all_par_names, keep_pars)
+  keep_inds <- get_keep_inds(all_par_names, keep_pars)
 
-  grad_list <- GetLogitSEDerivsTorch(
+  grad_list <- get_logit_se_derivs_torch(
     logit_vars=logit_vars,
     keep_inds=keep_inds,
     compute_derivs=TRUE)
@@ -228,9 +228,9 @@ ComputeLogitInfluence <- function(glm_res, se_group=NULL, keep_pars=NULL) {
   parameter_names <- logit_vars$parameter_names
   offset <- logit_vars$offset
 
-  RerunFun <- function(weights) {
-    ret_list <- ComputeLogitResults(x, y, weights, parameter_names, offset=offset)
-    return(ModelFit(
+  rerun_fun <- function(weights) {
+    ret_list <- compute_logit_results(x, y, weights, parameter_names, offset=offset)
+    return(model_fit(
       fit_object=ret_list,
       num_obs=num_obs,
       param=ret_list$betahat,
@@ -240,7 +240,7 @@ ComputeLogitInfluence <- function(glm_res, se_group=NULL, keep_pars=NULL) {
       se_group=NULL))
   }
 
-  model_fit <- ModelFit(
+  model_fit <- model_fit(
     fit_object=glm_res,
     num_obs=num_obs,
     parameter_names=parameter_names,
@@ -252,8 +252,8 @@ ComputeLogitInfluence <- function(glm_res, se_group=NULL, keep_pars=NULL) {
   rownames(grad_list$betahat_infl_mat) <- keep_pars
   rownames(grad_list$betahat_se_infl_mat) <- keep_pars
 
-  return(ModelGrads(model_fit=model_fit,
+  return(model_grads(model_fit=model_fit,
                     param_grad=grad_list$betahat_infl_mat,
                     se_grad=grad_list$betahat_se_infl_mat,
-                    RerunFun=RerunFun))
+                    rerun_fun=rerun_fun))
 }

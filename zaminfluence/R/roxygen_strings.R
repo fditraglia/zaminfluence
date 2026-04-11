@@ -3,20 +3,20 @@
 
 docs <- list(
   model_grads=paste0(
-      "A model gradient object (e.g. as produced by [ComputeModelInfluence])"
+      "A model gradient object (e.g. as produced by [compute_model_influence])"
   ),
   param_infl=paste0(
     "A parameter influence object (e.g. as produced by ",
-    "[AppendTargetRegressorInfluence])."
+    "[append_target_regressor_influence])."
   ),
   qoi=paste0(
     "A quantity of interest object (e.g. as produced by ",
-    "[QOIInfluence])."
+    "[qoi_influence])."
   ),
   signal=paste0("A signal object (e.g. one of the elements of the list ",
-    "produced by [GetInferenceSignalsForParameter])."),
+    "produced by [get_inference_signals_for_parameter])."),
   apip=paste0("An approximation perturbation inducing proportion object ",
-"(e.g. as produced by [GetAPIPForQOI])"),
+"(e.g. as produced by [get_apip_for_qoi])"),
 drop_inds="The indices to drop (in the order of the original data)",
 
   model_fit="The fit from [lm()] or [ivreg::ivreg()].",

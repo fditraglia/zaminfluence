@@ -2,13 +2,13 @@
 # Effectively, this tests GetIVSEDerivs and GetRegressionSEDerivs with
 # both grouped and ungrouped standard errors.
 
-GenerateTestInstance <- function(do_iv, do_grouping) {
+generate_test_instance <- function(do_iv, do_grouping) {
     x_dim <- 1
     param_true <- 0.1
     num_obs <- 500
 
     GenerateFun <- if (do_iv)
-      GenerateIVRegressionData else GenerateRegressionData
+      generate_iv_regression_data else generate_regression_data
     if (do_grouping) {
         df <- GenerateFun(num_obs, param_true, num_groups=5)
     } else {
@@ -39,9 +39,9 @@ GenerateTestInstance <- function(do_iv, do_grouping) {
     se_group <- if (do_grouping) df$se_group else NULL
 
     model_grads <-
-        ComputeModelInfluence(fit_object) |>
-        AppendTargetRegressorInfluence("x1")
-    signals <- GetInferenceSignals(model_grads)
+        compute_model_influence(fit_object) |>
+        append_target_regressor_influence("x1")
+    signals <- get_inference_signals(model_grads)
 
     return(list(
         model_grads=model_grads,
@@ -63,14 +63,14 @@ TestPredictions <- function(
     qoi <- param_infl[[qoi_name]]
     apip <- qoi[[sign]]
     drop_inds <- apip$infl_inds[1:num_leave_out]
-    w_new <- GetWeightVector(drop_inds, orig_weights=model_grads$model_fit$weights)
+    w_new <- get_weight_vector(drop_inds, orig_weights=model_grads$model_fit$weights)
 
     # The original values
-    base_values <- GetBaseValues(param_infl)
+    base_values <- get_base_values(param_infl)
 
     # Rerun
-    rerun <- model_grads$RerunFun(w_new)
-    rerun_base_values <- GetParameterInferenceQOIs(
+    rerun <- model_grads$rerun_fun(w_new)
+    rerun_base_values <- get_parameter_inference_qois(
       model_fit=rerun,
       target_parameter=param_infl$target_parameter,
       sig_num_ses=param_infl$sig_num_ses)
@@ -81,8 +81,8 @@ TestPredictions <- function(
 
     # Prediction
     diff_pred <-
-        map_dbl(names(base_values),
-                ~ PredictChange(param_infl[[.]], drop_inds))
+        purrr::map_dbl(names(base_values),
+                ~ predict_change(param_infl[[.]], drop_inds))
     names(diff_pred) <- names(base_values)
     rel_error <-
       (diff_pred - diff_rerun) /
@@ -118,8 +118,8 @@ TestSignalPrediction <- function(param_infl, signals, signal_name) {
       # There is nothing to test.
       return()
     }
-    base_value <- GetBaseValues(param_infl)[qoi_name]
-    pred_diff <- PredictChange(param_infl[[qoi_name]], drop_inds)
+    base_value <- get_base_values(param_infl)[qoi_name]
+    pred_diff <- predict_change(param_infl[[qoi_name]], drop_inds)
     pred_value <- base_value + pred_diff
 
     # Assert that a sign change took place.
@@ -131,7 +131,7 @@ TestSignalPrediction <- function(param_infl, signals, signal_name) {
                 signal_name))
 
     if (length(drop_inds) > 1) {
-        pred_diff <- PredictChange(param_infl[[qoi_name]],
+        pred_diff <- predict_change(param_infl[[qoi_name]],
                                    drop_inds[1:(length(drop_inds) - 1)])
         pred_value <- base_value + pred_diff
         expect_true(
@@ -143,12 +143,12 @@ TestSignalPrediction <- function(param_infl, signals, signal_name) {
 }
 
 
-# Basic sanity checks on the number of points returned by GetAMIS
+# Basic sanity checks on the number of points returned by get_amis
 TestGetAMIS <- function(qoi) {
   n_drops <- c(0, 0.5, 1, 10, 10000)
   for (sign in c("pos", "neg")) {
       for (n_drop in n_drops) {
-          suppressWarnings(amis <- GetAMIS(qoi, sign=sign, n_drop=n_drop))
+          suppressWarnings(amis <- get_amis(qoi, sign=sign, n_drop=n_drop))
           if (n_drop == 0) {
               expect_equivalent(amis, NULL)
           } else if (n_drop == 0.5) {
@@ -177,7 +177,7 @@ TestInfluence <- function(test_instance) {
   # Check the validity of the influence scores.
   qoi_names <- c("param", "param_mzse", "param_pzse")
   for (qoi_name in qoi_names) {
-      validate_QOIInfluence(param_infl[[qoi_name]])
+      validate_qoi_influence(param_infl[[qoi_name]])
       for (sign in c("pos", "neg")) {
           # TestAPIP(param_infl[[qoi_name]], sign)
           TestPredictions(model_grads, param_infl, qoi_name, sign)
@@ -186,7 +186,7 @@ TestInfluence <- function(test_instance) {
 
   # Check that the APIP predicts the appropriate change, and that
   # one fewer point does not.
-  signals <- GetInferenceSignalsForParameter(param_infl)
+  signals <- get_inference_signals_for_parameter(param_infl)
   for (signal_name in c("sign", "sig", "both")) {
       TestSignalPrediction(param_infl, signals, signal_name)
 
@@ -195,18 +195,18 @@ TestInfluence <- function(test_instance) {
       as.data.frame(signals[[signal_name]])
   }
 
-  # Test GetAMIS for a single QOI
+  # Test get_amis for a single QOI
   TestGetAMIS(param_infl$param_mzse)
 
   # Just that summary functions run
-  signals <- GetInferenceSignals(model_grads)
-  reruns <- RerunForSignals(signals, model_grads)
-  preds <- PredictForSignals(signals, model_grads)
+  signals <- get_inference_signals(model_grads)
+  reruns <- rerun_for_signals(signals, model_grads)
+  preds <- predict_for_signals(signals, model_grads)
 
-  reruns_df <- GetSignalsAndRerunsDataframe(signals, reruns, model_grads)
-  preds_df <- GetSignalsAndRerunsDataframe(signals, preds, model_grads)
+  reruns_df <- get_signals_and_reruns_df(signals, reruns, model_grads)
+  preds_df <- get_signals_and_reruns_df(signals, preds, model_grads)
 
-  PlotSignal(model_grads, signals, "x1", "sign", reruns=reruns, apip_max=0.03)
+  plot_signal(model_grads, signals, "x1", "sign", reruns=reruns, apip_max=0.03)
 
   return(invisible(test_instance))
 }
@@ -219,7 +219,7 @@ test_that("influence_computations_correct", {
       sprintf("Running %s %s",
           if (do_iv) "IV" else "OLS",
           if (do_grouping) "grouped" else "ungrouped", "\n") |> cat()
-      GenerateTestInstance(do_iv, do_grouping) |>
+      generate_test_instance(do_iv, do_grouping) |>
         TestInfluence()
     }
   }

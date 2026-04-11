@@ -1,7 +1,7 @@
 
-# Define a QOIInfluence S3 class
+# Define a qoi_influence S3 class
 
-new_QOIInfluence <- function(
+new_qoi_influence <- function(
     name,
     infl, base_value, num_obs,
     ordered_inds_neg, infl_cumsum_neg,
@@ -19,13 +19,13 @@ new_QOIInfluence <- function(
         base_value=base_value,
         infl=infl  # In the original order
       ),
-      class="QOIInfluence"))
+      class="qoi_influence"))
 }
 
 
-validate_QOIInfluence <- function(qoi) {
-    stopifnot(inherits(qoi, "QOIInfluence"))
-    CheckSortedInfluence <- function(signed_infl, sign) {
+validate_qoi_influence <- function(qoi) {
+    stopifnot(inherits(qoi, "qoi_influence"))
+    check_sorted_influence <- function(signed_infl, sign) {
       stopifnot(all(signed_infl$infl_cumsum * sign > 0))
       stopifnot(length(signed_infl$infl_inds) ==
                 length(signed_infl$infl_cumsum))
@@ -37,8 +37,8 @@ validate_QOIInfluence <- function(qoi) {
       # Check that the influence scores are sorted
       stopifnot(all(diff(infl_from_diff * sign) <= 0))
     }
-    CheckSortedInfluence(qoi$pos, 1)
-    CheckSortedInfluence(qoi$neg, -1)
+    check_sorted_influence(qoi$pos, 1)
+    check_sorted_influence(qoi$neg, -1)
     stopifnot(qoi$neg$num_obs == qoi$pos$num_obs)
 }
 
@@ -50,7 +50,7 @@ validate_QOIInfluence <- function(qoi) {
 #'
 #' @return See "Quantity of Interest" in README.md
 #' @export
-QOIInfluence <- function(infl, base_value, name, num_obs=NULL) {
+qoi_influence <- function(infl, base_value, name, num_obs=NULL) {
     if (is.null(num_obs)) {
         num_obs <- length(infl)
     }
@@ -69,7 +69,7 @@ QOIInfluence <- function(infl, base_value, name, num_obs=NULL) {
     infl_neg <- infl[ordered_inds_neg]
     infl_cumsum_neg <- cumsum(infl_neg)
 
-    return(new_QOIInfluence(
+    return(new_qoi_influence(
       name=name,
       infl=infl, base_value=base_value, num_obs=num_obs,
       ordered_inds_neg=ordered_inds_neg, infl_cumsum_neg=infl_cumsum_neg,
@@ -77,19 +77,19 @@ QOIInfluence <- function(infl, base_value, name, num_obs=NULL) {
 }
 
 
-# Define an APIP S3 class
+# Define an apip S3 class
 
-new_APIP <- function(n, prop, inds, success) {
+new_apip <- function(n, prop, inds, success) {
   return(structure(
     list(n=n, prop=prop, inds=as.integer(inds), success=as.logical(success)),
-    class="APIP"))
+    class="apip"))
 }
 
 
-validate_APIP <- function(apip) {
-  stopifnot(inherits(apip, "APIP"))
-  StopIfNotNumericScalar(apip$n)
-  StopIfNotNumericScalar(apip$prop)
+validate_apip <- function(apip) {
+  stopifnot(inherits(apip, "apip"))
+  stop_if_not_numeric_scalar(apip$n)
+  stop_if_not_numeric_scalar(apip$prop)
   if (any(is.na(apip$inds))) {
     stopifnot(length(apip$inds) == 1)
     stopifnot(!apip$success)
@@ -101,13 +101,13 @@ validate_APIP <- function(apip) {
 }
 
 
-APIP <- function(n_drop, num_obs, inds_drop) {
+make_apip <- function(n_drop, num_obs, inds_drop) {
   if (any(is.na(inds_drop))) {
     success <- FALSE
   } else {
     success <- TRUE
   }
-  return(validate_APIP(new_APIP(
+  return(validate_apip(new_apip(
     n=n_drop,
     prop=n_drop / num_obs,
     inds=inds_drop,
@@ -125,8 +125,8 @@ APIP <- function(n_drop, num_obs, inds_drop) {
 #' `prop`: The proportion of points to drop
 #' `inds`: `r docs$drop_inds`
 #' @export
-GetAPIPForQOI <- function(qoi, signal) {
-    stopifnot(inherits(qoi, "QOIInfluence"))
+get_apip_for_qoi <- function(qoi, signal) {
+    stopifnot(inherits(qoi, "qoi_influence"))
     stopifnot(is.numeric(signal))
     stopifnot(length(signal) == 1)
 
@@ -135,7 +135,7 @@ GetAPIPForQOI <- function(qoi, signal) {
     # To produce a negative change, drop observations with positive influence
     # scores, and vice-versa.
     if (signal == 0) {
-      return(APIP(n_drop=0, num_obs=num_obs, inds_drop=c()))
+      return(make_apip(n_drop=0, num_obs=num_obs, inds_drop=c()))
     }
     n_vec <- 1:length(qoi_sign$infl_cumsum)
     # TODO: do this more efficiently using your own routine, since
@@ -150,7 +150,7 @@ GetAPIPForQOI <- function(qoi, signal) {
     } else {
         drop_inds <- qoi_sign$infl_inds[1:n_drop]
     }
-    return(APIP(n_drop=n_drop, num_obs=num_obs, inds_drop=drop_inds))
+    return(make_apip(n_drop=n_drop, num_obs=num_obs, inds_drop=drop_inds))
 }
 
 
@@ -165,7 +165,7 @@ GetAPIPForQOI <- function(qoi, signal) {
 #'
 #' @return A vector of weights in the order of the original data.
 #' @export
-GetWeightVector <- function(drop_inds, num_obs=NULL,
+get_weight_vector <- function(drop_inds, num_obs=NULL,
                             orig_weights=NULL, bool=FALSE, invert=FALSE) {
   if (is.null(num_obs)) {
     if (is.null(orig_weights)) {
@@ -222,8 +222,8 @@ GetWeightVector <- function(drop_inds, num_obs=NULL,
 #'
 #' @return `r docs$drop_inds`
 #' @export
-GetAMIS <- function(qoi, sign, n_drop) {
-  stopifnot(inherits(qoi, "QOIInfluence"))
+get_amis <- function(qoi, sign, n_drop) {
+  stopifnot(inherits(qoi, "qoi_influence"))
   if (!(sign %in% c("pos", "neg"))) {
     stop("Sign must be either `pos` or `neg`.")
   }
@@ -254,13 +254,13 @@ GetAMIS <- function(qoi, sign, n_drop) {
 #' @return The approximate largest change that can be produced by dropping
 #' the specified number of points.
 #' @export
-GetAMIP <- function(qoi, sign, n_drop) {
-  stopifnot(inherits(qoi, "QOIInfluence"))
+get_amip <- function(qoi, sign, n_drop) {
+  stopifnot(inherits(qoi, "qoi_influence"))
   if (n_drop == 0) {
     return(0)
   }
-  amis <- GetAMIS(qoi, sign, n_drop)
-  return(PredictChange(qoi, amis))
+  amis <- get_amis(qoi, sign, n_drop)
+  return(predict_change(qoi, amis))
 }
 
 #' Predict the effect of dropping points.
@@ -270,7 +270,7 @@ GetAMIP <- function(qoi, sign, n_drop) {
 #' @return A linear approximation to the effect of dropping the specified
 #' observations.
 #'@export
-PredictChange <- function(qoi, drop_inds) {
-    stopifnot(inherits(qoi, "QOIInfluence"))
+predict_change <- function(qoi, drop_inds) {
+    stopifnot(inherits(qoi, "qoi_influence"))
     return(-1 * sum(qoi$infl[drop_inds]))
 }

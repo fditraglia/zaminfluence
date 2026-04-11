@@ -100,10 +100,10 @@ test_that("derivatives work", {
 
     # Verify pure-R computation matches torch at real weights
     pure_r <- PureRComputeCoeffAndSE(x, y, w0, z, se_group)
-    AssertNearlyEqual(
+    assert_nearly_equal(
       Re(pure_r$betahat), model_grads$model_fit$param,
       desc="pure R betahat matches torch")
-    AssertNearlyEqual(
+    assert_nearly_equal(
       Re(pure_r$se), model_grads$model_fit$se,
       desc="pure R se matches torch")
 
@@ -120,12 +120,12 @@ test_that("derivatives work", {
 
     # Compare autograd derivatives against complex step reference
     for (par in model_grads$parameter_names) {
-      fit_ind <- GetParameterIndex(model_grads$model_fit, par)
-      grad_ind <- GetParameterIndex(model_grads, par)
-      AssertNearlyEqual(
+      fit_ind <- get_parameter_index(model_grads$model_fit, par)
+      grad_ind <- get_parameter_index(model_grads, par)
+      assert_nearly_equal(
         model_grads$param_grad[grad_ind, ], param_jac[fit_ind, ],
         desc=paste("param_grad", par))
-      AssertNearlyEqual(
+      assert_nearly_equal(
         model_grads$se_grad[grad_ind, ], se_jac[fit_ind, ],
         desc=paste("se_grad", par))
     }
@@ -134,14 +134,14 @@ test_that("derivatives work", {
   TestRegressionConfigurationDerivs <- function(
         num_groups, weights, keep_pars, do_iv) {
     if (do_iv) {
-      df <- GenerateIVRegressionData(
+      df <- generate_iv_regression_data(
         num_obs, c(0.5, -0.5, 0.0), num_groups=num_groups)
       fit_object <- ivreg(y ~ x1 + x2 + x3 + 1 | z1 + z2 + z3 + 1,
                       data=df, x=TRUE, y=TRUE, weights=weights)
       x <- fit_object$x$regressors
       z <- fit_object$x$instruments
     } else {
-      df <- GenerateRegressionData(
+      df <- generate_regression_data(
         num_obs, c(0.5, -0.5, 0.0), num_groups=num_groups)
       fit_object <-
         lm(y ~ x1 + x2 + x3 + 1, df, x=TRUE, y=TRUE, weights=weights)
@@ -151,7 +151,7 @@ test_that("derivatives work", {
     se_group <- df[["se_group"]]
 
     model_grads <-
-      ComputeModelInfluence(
+      compute_model_influence(
         fit_object, se_group=se_group, keep_pars=keep_pars)
     TestDerivs(model_grads, x, as.numeric(fit_object$y), z, se_group)
   }

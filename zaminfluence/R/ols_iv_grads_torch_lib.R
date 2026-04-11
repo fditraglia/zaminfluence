@@ -2,7 +2,7 @@
 # Ordinary least squares
 
 
-ValidateKeepInds <- function(keep_inds, x) {
+validate_keep_inds <- function(keep_inds, x) {
   # If keep_inds is unspecified, compute derivatives for all coefficients.
   if (is.null(keep_inds)) {
     keep_inds <- 1:ncol(x)
@@ -22,7 +22,7 @@ ValidateKeepInds <- function(keep_inds, x) {
 
 
 # Extract the relevant variables from the output of `lm()`
-GetRegressionVariables <- function(lm_res) {
+get_regression_variables <- function(lm_res) {
   if (!(("x" %in% names(lm_res)) &
         ("y" %in% names(lm_res)))) {
       stop("You must run lm with the arguments x=TRUE and y=TRUE.")
@@ -46,7 +46,7 @@ GetRegressionVariables <- function(lm_res) {
 
 
 # Safely extract the IV variables from a fit object.
-GetIVVariables <- function(iv_res) {
+get_iv_variables <- function(iv_res) {
   if (!(("x" %in% names(iv_res)) &
         ("y" %in% names(iv_res)))) {
       stop("You must run ivreg with the arguments x=TRUE and y=TRUE.")
@@ -74,7 +74,7 @@ GetIVVariables <- function(iv_res) {
 # Torch stuff.
 
 
-TorchGroupedAggregate <- function(src_mat, inds) {
+torch_grouped_aggregate <- function(src_mat, inds) {
     # https://discuss.pytorch.org/t/groupby-aggregate-mean-in-pytorch/45335
     max_ind <- inds$max() |> as.integer()
     zero_mat <- torch::torch_tensor(
@@ -87,10 +87,10 @@ TorchGroupedAggregate <- function(src_mat, inds) {
 
 # inds <- torch_tensor(c(1, 1, 3, 2, 2) |> matrix(5, 1), dtype=torch_int64())
 # src <- torch_tensor(c(rep(0.1, 5), rep(0.2, 5)) |> matrix(5, 2))
-# TorchGroupedAggregate(src, inds)
+# torch_grouped_aggregate(src, inds)
 
 
-DefineTorchVars <- function(iv_vars) {
+define_torch_vars <- function(iv_vars) {
     if (iv_vars$z_equals_x) {
       stopifnot(all(c("x", "y", "w0") %in% names(iv_vars)))
     } else {
@@ -141,11 +141,11 @@ DefineTorchVars <- function(iv_vars) {
 }
 
 
-GetIVRegressionSEDerivsTorch <- function(
+get_iv_regression_se_derivs_torch <- function(
       iv_vars, se_group=NULL, keep_inds=NULL, compute_derivs=TRUE) {
 
-    keep_inds <- ValidateKeepInds(keep_inds, iv_vars$x)
-    tv <- DefineTorchVars(iv_vars)
+    keep_inds <- validate_keep_inds(keep_inds, iv_vars$x)
+    tv <- define_torch_vars(iv_vars)
 
     if (!is.null(se_group)) {
         tv$score_mat <- tv$z * tv$eps * tv$w
@@ -154,7 +154,7 @@ GetIVRegressionSEDerivsTorch <- function(
                 as.integer(factor(se_group)) |>
                 matrix(ncol=1),
                 dtype=torch::torch_int64())
-        tv$score_sum <- TorchGroupedAggregate(
+        tv$score_sum <- torch_grouped_aggregate(
           src_mat=tv$score_mat, inds=tv$se_group)
         tv$s_mat <- tv$score_sum - tv$score_sum$mean(dim=1, keepdim=TRUE)
 
@@ -234,13 +234,13 @@ GetIVRegressionSEDerivsTorch <- function(
 #'
 #' @return `r docs$rerun_return`
 #'
-ComputeRegressionResults <- function(lm_result, weights=NULL, se_group=NULL) {
-  reg_vars <- GetRegressionVariables(lm_result)
+compute_regression_results <- function(lm_result, weights=NULL, se_group=NULL) {
+  reg_vars <- get_regression_variables(lm_result)
   if (!is.null(weights)) {
     reg_vars$w0 <- weights
   }
 
-  reg_grad_list <- GetIVRegressionSEDerivsTorch(
+  reg_grad_list <- get_iv_regression_se_derivs_torch(
     iv_vars=reg_vars,
     se_group=se_group,
     keep_inds=NULL,
@@ -268,13 +268,13 @@ ComputeRegressionResults <- function(lm_result, weights=NULL, se_group=NULL) {
 #' @param se_group `r docs$se_group`
 #'
 #' @return A list containing the regression coefficients and standard errors.
-ComputeIVRegressionResults <- function(iv_res, weights=NULL, se_group=NULL) {
-  iv_vars <- GetIVVariables(iv_res)
+compute_iv_regression_results <- function(iv_res, weights=NULL, se_group=NULL) {
+  iv_vars <- get_iv_variables(iv_res)
   if (!is.null(weights)) {
     iv_vars$w0 <- weights
   }
 
-  reg_grad_list <- GetIVRegressionSEDerivsTorch(
+  reg_grad_list <- get_iv_regression_se_derivs_torch(
     iv_vars=iv_vars,
     se_group=se_group,
     keep_inds=NULL,
@@ -298,7 +298,7 @@ ComputeIVRegressionResults <- function(iv_res, weights=NULL, se_group=NULL) {
 # automatic differentiation, perhaps in a different programming language.
 
 
-GetKeepInds <- function(coeff_names, keep_pars=NULL) {
+get_keep_inds <- function(coeff_names, keep_pars=NULL) {
     if (is.null(keep_pars)) {
       return(1:length(coeff_names))
     }
@@ -319,26 +319,26 @@ GetKeepInds <- function(coeff_names, keep_pars=NULL) {
 #' @return `r docs$grad_return`
 #'
 #' @export
-ComputeRegressionInfluence <- function(
+compute_regression_influence <- function(
     lm_result, se_group=NULL, keep_pars=NULL) {
 
   all_par_names <- names(coefficients(lm_result))
   if (is.null(keep_pars)) {
     keep_pars <- all_par_names
   }
-  keep_inds <- GetKeepInds(all_par_names, keep_pars)
+  keep_inds <- get_keep_inds(all_par_names, keep_pars)
 
-  reg_vars <- GetRegressionVariables(lm_result)
-  reg_grad_list <- GetIVRegressionSEDerivsTorch(
+  reg_vars <- get_regression_variables(lm_result)
+  reg_grad_list <- get_iv_regression_se_derivs_torch(
     iv_vars=reg_vars,
     se_group=se_group,
     keep_inds=keep_inds,
     compute_derivs=TRUE)
 
-  RerunFun <- function(weights) {
+  rerun_fun <- function(weights) {
     ret_list <-
-      ComputeRegressionResults(lm_result, weights=weights, se_group=se_group)
-    return(ModelFit(
+      compute_regression_results(lm_result, weights=weights, se_group=se_group)
+    return(model_fit(
       fit_object=ret_list,
       num_obs=reg_vars$num_obs,
       param=ret_list$betahat,
@@ -348,7 +348,7 @@ ComputeRegressionInfluence <- function(
       se_group=se_group))
   }
 
-  model_fit <- ModelFit(
+  model_fit <- model_fit(
     fit_object=lm_result,
     num_obs=reg_vars$num_obs,
     parameter_names=reg_vars$parameter_names,
@@ -360,10 +360,10 @@ ComputeRegressionInfluence <- function(
   rownames(reg_grad_list$betahat_infl_mat) <- keep_pars
   rownames(reg_grad_list$betahat_se_infl_mat) <- keep_pars
 
-  return(ModelGrads(model_fit=model_fit,
+  return(model_grads(model_fit=model_fit,
                     param_grad=reg_grad_list$betahat_infl_mat,
                     se_grad=reg_grad_list$betahat_se_infl_mat,
-                    RerunFun=RerunFun))
+                    rerun_fun=rerun_fun))
 
 }
 
@@ -376,26 +376,26 @@ ComputeRegressionInfluence <- function(
 #' @return `r docs$grad_return`
 #'
 #' @export
-ComputeIVRegressionInfluence <- function(
+compute_iv_regression_influence <- function(
       iv_res, se_group=NULL, keep_pars=NULL) {
 
     all_par_names <- names(coefficients(iv_res))
     if (is.null(keep_pars)) {
       keep_pars <- all_par_names
     }
-    keep_inds <- GetKeepInds(all_par_names, keep_pars)
+    keep_inds <- get_keep_inds(all_par_names, keep_pars)
 
-    iv_vars <- GetIVVariables(iv_res)
-    iv_grad_list <- GetIVRegressionSEDerivsTorch(
+    iv_vars <- get_iv_variables(iv_res)
+    iv_grad_list <- get_iv_regression_se_derivs_torch(
       iv_vars=iv_vars,
       se_group=se_group,
       keep_inds=keep_inds,
       compute_derivs=TRUE)
 
-    RerunFun <- function(weights) {
+    rerun_fun <- function(weights) {
         ret_list <-
-          ComputeIVRegressionResults(iv_res, weights=weights, se_group=se_group)
-        return(ModelFit(
+          compute_iv_regression_results(iv_res, weights=weights, se_group=se_group)
+        return(model_fit(
           fit_object=ret_list,
           num_obs=iv_vars$num_obs,
           param=ret_list$betahat,
@@ -405,7 +405,7 @@ ComputeIVRegressionInfluence <- function(
           se_group=se_group))
       }
 
-    model_fit <- ModelFit(
+    model_fit <- model_fit(
       fit_object=iv_res,
       num_obs=iv_vars$num_obs,
       parameter_names=iv_vars$parameter_names,
@@ -418,10 +418,10 @@ ComputeIVRegressionInfluence <- function(
     rownames(iv_grad_list$betahat_se_infl_mat) <- keep_pars
 
     # Note that the standard errors may not match iv_res when using se_group.
-    return(ModelGrads(model_fit=model_fit,
+    return(model_grads(model_fit=model_fit,
                       param_grad=iv_grad_list$betahat_infl_mat,
                       se_grad=iv_grad_list$betahat_se_infl_mat,
-                      RerunFun=RerunFun))
+                      rerun_fun=rerun_fun))
 }
 
 
@@ -433,15 +433,15 @@ ComputeIVRegressionInfluence <- function(
 #' @return `r docs$model_grads`
 #'
 #' @export
-ComputeModelInfluence <- function(fit_object, se_group=NULL, keep_pars=NULL) {
+compute_model_influence <- function(fit_object, se_group=NULL, keep_pars=NULL) {
   if (inherits(fit_object, "glm")) {
-    return(ComputeLogitInfluence(
+    return(compute_logit_influence(
       fit_object, se_group=se_group, keep_pars=keep_pars))
   } else if (inherits(fit_object, "ivreg")) {
-    return(ComputeIVRegressionInfluence(
+    return(compute_iv_regression_influence(
       fit_object, se_group=se_group, keep_pars=keep_pars))
   } else if (inherits(fit_object, "lm")) {
-    return(ComputeRegressionInfluence(
+    return(compute_regression_influence(
       fit_object, se_group=se_group, keep_pars=keep_pars))
   } else {
     stop(sprintf("Unsupported model class: %s",

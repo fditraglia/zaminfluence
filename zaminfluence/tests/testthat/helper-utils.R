@@ -2,7 +2,7 @@
 library(dplyr)
 library(ivreg)
 
-AssertNearlyEqual <- function(x, y, tol=1e-9, desc=NULL) {
+assert_nearly_equal <- function(x, y, tol=1e-9, desc=NULL) {
   diff_norm <- max(abs(x - y))
   if (is.null(desc)) {
     info_str <- sprintf("%e > %e", diff_norm, tol)
@@ -13,7 +13,7 @@ AssertNearlyEqual <- function(x, y, tol=1e-9, desc=NULL) {
 }
 
 
-AssertNearlyZero <- function(x, tol=1e-15, desc=NULL) {
+assert_nearly_zero <- function(x, tol=1e-15, desc=NULL) {
   x_norm <- max(abs(x))
   if (is.null(desc)) {
     info_str <- sprintf("%e > %e", x_norm, tol)
@@ -25,7 +25,7 @@ AssertNearlyZero <- function(x, tol=1e-15, desc=NULL) {
 
 
 # Compute the sandwich covariance, allowing se_group to be null.
-GetFitCovariance <- function(fit, se_group=NULL) {
+get_fit_covariance <- function(fit, se_group=NULL) {
   if (is.null(se_group)) {
     return(vcov(fit))
   } else {

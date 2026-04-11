@@ -1,6 +1,6 @@
 
-# Define an ParameterInferenceInfluence S3 object.
-new_ParameterInferenceInfluence <- function(
+# Define an parameter_inference_influence S3 object.
+new_parameter_inference_influence <- function(
     target_parameter, sig_num_ses,
     se_qoi, param_qoi, param_mzse_qoi, param_pzse_qoi) {
   return(structure(
@@ -12,19 +12,19 @@ new_ParameterInferenceInfluence <- function(
         param_pzse=param_pzse_qoi,
         sig_num_ses=sig_num_ses,
         qoi_names=c("param", "param_mzse", "param_pzse", "se")),
-    class="ParameterInferenceInfluence"))
+    class="parameter_inference_influence"))
 }
 
 
 
-validate_ParameterInferenceInfluence <- function(param_infl) {
-  stopifnot(inherits(param_infl, "ParameterInferenceInfluence"))
+validate_parameter_inference_influence <- function(param_infl) {
+  stopifnot(inherits(param_infl, "parameter_inference_influence"))
   stopifnot(setequal(
     param_infl$qoi_names,
     c("param", "param_mzse", "param_pzse", "se")))
 
   for (qoi_name in param_infl$qoi_names) {
-    stopifnot(inherits(param_infl[[qoi_name]], "QOIInfluence"))
+    stopifnot(inherits(param_infl[[qoi_name]], "qoi_influence"))
   }
 
   sig_num_ses <- param_infl$sig_num_ses
@@ -37,21 +37,21 @@ validate_ParameterInferenceInfluence <- function(param_infl) {
 
 
 #'@export
-GetParameterInferenceQOIs <- function(model_fit, target_parameter,
+get_parameter_inference_qois <- function(model_fit, target_parameter,
                                       sig_num_ses=qnorm(0.975)) {
-  stopifnot(inherits(model_fit, "ModelFit"))
-  target_index <- GetParameterIndex(model_fit, target_parameter)
+  stopifnot(inherits(model_fit, "model_fit"))
+  target_index <- get_parameter_index(model_fit, target_parameter)
 
   param <- model_fit$param[target_index]
   se <- model_fit$se[target_index]
 
-  values <- GetInferenceQOIs(param=param, se=se, sig_num_ses=sig_num_ses)
+  values <- get_inference_qois(param=param, se=se, sig_num_ses=sig_num_ses)
   values$target_parameter <- target_parameter
   return(values)
 }
 
 
-GetInferenceQOIs <- function(param, se, sig_num_ses) {
+get_inference_qois <- function(param, se, sig_num_ses) {
   # Remove names so we can use unlist() and get expected names.
   param <- unname(param)
   se <- unname(se)
@@ -65,13 +65,13 @@ GetInferenceQOIs <- function(param, se, sig_num_ses) {
 }
 
 
-ParameterInferenceInfluence <- function(model_grads, target_parameter,
+parameter_inference_influence <- function(model_grads, target_parameter,
                                         sig_num_ses=qnorm(0.975)) {
-    stopifnot(inherits(model_grads, "ModelGrads"))
+    stopifnot(inherits(model_grads, "model_grads"))
 
     weights <- model_grads$model_fit$weights
 
-    qoi_base_values <- GetParameterInferenceQOIs(
+    qoi_base_values <- get_parameter_inference_qois(
       model_grads$model_fit, target_parameter=target_parameter,
       sig_num_ses=sig_num_ses)
 
@@ -81,40 +81,40 @@ ParameterInferenceInfluence <- function(model_grads, target_parameter,
     # effect of removing a datapoint (taking its value from the current weight
     # to zero.) So we multiply the raw weight
     # derivatives by the actual base weights.
-    target_index <- GetParameterIndex(model_grads, target_parameter)
+    target_index <- get_parameter_index(model_grads, target_parameter)
     se_grad <- weights * model_grads$se_grad[target_index,]
     param_grad <- weights * model_grads$param_grad[target_index, ]
     num_obs <- model_grads$model_fit$num_obs
-    qoi_gradients <- GetInferenceQOIs(
+    qoi_gradients <- get_inference_qois(
       param=param_grad,
       se=se_grad,
       sig_num_ses=sig_num_ses)
 
-    param_infl <- new_ParameterInferenceInfluence(
+    param_infl <- new_parameter_inference_influence(
           target_parameter=target_parameter,
           sig_num_ses=sig_num_ses,
-          se_qoi=QOIInfluence(
+          se_qoi=qoi_influence(
               name="se",
               infl=qoi_gradients$se,
               base_value=qoi_base_values$se,
               num_obs=num_obs),
-          param_qoi=QOIInfluence(
+          param_qoi=qoi_influence(
               name="param",
               infl=qoi_gradients$param,
               base_value=qoi_base_values$param,
               num_obs=num_obs),
-          param_mzse_qoi=QOIInfluence(
+          param_mzse_qoi=qoi_influence(
               name="param_mzse",
               infl=qoi_gradients$param_mzse,
               base_value=qoi_base_values$param_mzse,
               num_obs=num_obs),
-          param_pzse_qoi=QOIInfluence(
+          param_pzse_qoi=qoi_influence(
               name="param_pzse",
               infl=qoi_gradients$param_pzse,
               base_value=qoi_base_values$param_pzse,
               num_obs=num_obs))
 
-    validate_ParameterInferenceInfluence(param_infl)
+    validate_parameter_inference_influence(param_infl)
 
     return(param_infl)
 }
@@ -131,14 +131,14 @@ ParameterInferenceInfluence <- function(model_grads, target_parameter,
 #' parameter influence object.
 #'
 #'@export
-AppendTargetRegressorInfluence <- function(model_grads, target_parameter,
+append_target_regressor_influence <- function(model_grads, target_parameter,
                                            sig_num_ses=qnorm(0.975)) {
-    stopifnot(inherits(model_grads, "ModelGrads"))
+    stopifnot(inherits(model_grads, "model_grads"))
     if (is.null(model_grads[["param_infls"]])) {
         model_grads$param_infls <- list()
     }
 
-    param_infl <- ParameterInferenceInfluence(
+    param_infl <- parameter_inference_influence(
       model_grads, target_parameter, sig_num_ses=sig_num_ses)
 
     model_grads$param_infls[[target_parameter]] <- param_infl
@@ -147,37 +147,37 @@ AppendTargetRegressorInfluence <- function(model_grads, target_parameter,
 
 
 #' @export
-GetBaseValues <- function(param_infl) {
-  stopifnot(inherits(param_infl, "ParameterInferenceInfluence"))
+get_base_values <- function(param_infl) {
+  stopifnot(inherits(param_infl, "parameter_inference_influence"))
   return(purrr::map_dbl(param_infl[param_infl$qoi_names], ~ .$base_value))
 }
 
 
-# Define an QOISignal S3 object.
-new_QOISignal <- function(qoi, signal, description, apip) {
+# Define an qoi_signal S3 object.
+new_qoi_signal <- function(qoi, signal, description, apip) {
   return(structure(
     list(qoi=qoi, signal=signal, description=description, apip=apip),
-    class="QOISignal"
+    class="qoi_signal"
   ))
 }
 
 
-validate_QOISignal <- function(signal) {
-  stopifnot(inherits(signal, "QOISignal"))
-  stopifnot(inherits(signal$qoi, "QOIInfluence"))
-  stopifnot(inherits(signal$apip, "APIP"))
-  StopIfNotNumericScalar(signal$signal)
+validate_qoi_signal <- function(signal) {
+  stopifnot(inherits(signal, "qoi_signal"))
+  stopifnot(inherits(signal$qoi, "qoi_influence"))
+  stopifnot(inherits(signal$apip, "apip"))
+  stop_if_not_numeric_scalar(signal$signal)
   return(invisible(signal))
 }
 
 
-QOISignal <- function(qoi, signal, description) {
+qoi_signal <- function(qoi, signal, description) {
   # Note that the qoi data is not copied.
-  return(validate_QOISignal(new_QOISignal(
+  return(validate_qoi_signal(new_qoi_signal(
     qoi=qoi,
     signal=signal,
     description=description,
-    apip=GetAPIPForQOI(qoi=qoi, signal=signal)
+    apip=get_apip_for_qoi(qoi=qoi, signal=signal)
   )))
 }
 
@@ -187,14 +187,14 @@ QOISignal <- function(qoi, signal, description) {
 #'
 #' @return A list lists of of signals, one for each parameter in
 #' named model_grads$param_infls.  See the output of
-#' `GetInferenceSignalsForParameter`.
+#' `get_inference_signals_for_parameter`.
 #'
 #' @export
-GetInferenceSignals <- function(model_grads) {
-  stopifnot(inherits(model_grads, "ModelGrads"))
+get_inference_signals <- function(model_grads) {
+  stopifnot(inherits(model_grads, "model_grads"))
   signals <- list()
   for (param_name in names(model_grads$param_infls)) {
-    signals[[param_name]] <- GetInferenceSignalsForParameter(
+    signals[[param_name]] <- get_inference_signals_for_parameter(
       model_grads$param_infls[[param_name]]
     )
   }
@@ -206,11 +206,11 @@ GetInferenceSignals <- function(model_grads) {
 #' @param param_infl `r docs$param_infl`
 #'
 #' @return A list of signals, named "sign", "sig", and "both".  Each
-#' entry is a `QOISignal` object.
+#' entry is a `qoi_signal` object.
 #' @export
-GetInferenceSignalsForParameter <- function(param_infl) {
-    stopifnot(inherits(param_infl, "ParameterInferenceInfluence"))
-    base_values <- GetBaseValues(param_infl)
+get_inference_signals_for_parameter <- function(param_infl) {
+    stopifnot(inherits(param_infl, "parameter_inference_influence"))
+    base_values <- get_base_values(param_infl)
     param <- base_values["param"]
     param_mzse <- base_values["param_mzse"]
     param_pzse <- base_values["param_pzse"]
@@ -220,7 +220,7 @@ GetInferenceSignalsForParameter <- function(param_infl) {
     both_label <- "sign and significance"
 
     signals <- list()
-    signals$sign <- QOISignal(
+    signals$sign <- qoi_signal(
       qoi=param_infl[["param"]],
       signal=-1 * param,
       description=sign_label)
@@ -228,20 +228,20 @@ GetInferenceSignalsForParameter <- function(param_infl) {
     is_significant <- sign(param_mzse) == sign(param_pzse)
     if (is_significant) {
         if (param_mzse >= 0) { # then param_pzse > 0 too because significant
-            signals$sig <- QOISignal(
+            signals$sig <- qoi_signal(
               qoi=param_infl[["param_mzse"]],
               signal=-1 * param_mzse,
               description=sig_label)
-            signals$both  <- QOISignal(
+            signals$both  <- qoi_signal(
               qoi=param_infl[["param_pzse"]],
               signal=-1 * param_pzse,
               description=both_label)
         } else if (param_pzse < 0) { # then param_mzse < 0 too because significant
-            signals$sig <- QOISignal(
+            signals$sig <- qoi_signal(
               qoi=param_infl[["param_pzse"]],
               signal=-1 * param_pzse,
               description=sig_label)
-            signals$both <- QOISignal(
+            signals$both <- qoi_signal(
                 qoi=param_infl[["param_mzse"]],
                 signal=-1 * param_mzse,
                 description=both_label)
@@ -251,12 +251,12 @@ GetInferenceSignalsForParameter <- function(param_infl) {
     } else { # Not significant.  Choose to change the interval endpoint which
              # is closer.
         if (abs(param_mzse) >= abs(param_pzse)) {
-            signals$sig <- QOISignal(
+            signals$sig <- qoi_signal(
               qoi=param_infl[["param_pzse"]],
               signal=-1 * param_pzse,
               description=sig_label)
         } else  {
-            signals$sig <- QOISignal(
+            signals$sig <- qoi_signal(
               qoi=param_infl[["param_mzse"]],
               signal=-1 * param_mzse,
               description=sig_label)
@@ -265,12 +265,12 @@ GetInferenceSignalsForParameter <- function(param_infl) {
         # If positive, taking the upper CI limit to zero will change both
         # sign and make it significant.
         if (param >= 0) {
-            signals$both <- QOISignal(
+            signals$both <- qoi_signal(
                 qoi=param_infl[["param_pzse"]],
                 signal=-1 * param_pzse,
                 description=both_label)
         } else {
-            signals$both <- QOISignal(
+            signals$both <- qoi_signal(
                 qoi=param_infl[["param_mzse"]],
                 signal=-1 * param_mzse,
                 description=both_label)
@@ -285,7 +285,7 @@ GetInferenceSignalsForParameter <- function(param_infl) {
 #' @param signal `r docs$signal`
 #'
 #'@export
-as.data.frame.QOISignal <- function(signal) {
+as.data.frame.qoi_signal <- function(signal) {
   data.frame(
       qoi_name=signal$qoi$name,
       description=signal$description,

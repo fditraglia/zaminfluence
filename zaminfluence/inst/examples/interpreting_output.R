@@ -20,7 +20,7 @@ num_obs <- 10000
 set.seed(42)
 x_dim <- 2
 param_true <- c(0.1, 100)
-df <- GenerateRegressionData(num_obs, param_true, num_groups=NULL)
+df <- generate_regression_data(num_obs, param_true, num_groups=NULL)
 
 # Fit a regression model.  We'll investigate the coefficient in front of x1.
 fit_object <- lm(data=df, formula="y ~ x1 + x2 + 1", x=TRUE, y=TRUE)
@@ -29,21 +29,21 @@ fit_object <- lm(data=df, formula="y ~ x1 + x2 + 1", x=TRUE, y=TRUE)
 # There's no need for the user to interact with model_grads directly --- it
 # just stores the relatively expensive influence function computations.
 model_grads <-
-    ComputeModelInfluence(fit_object, keep_pars=c("x1", "x2")) %>%
-    AppendTargetRegressorInfluence("x1") %>%
-    AppendTargetRegressorInfluence("x2")
+    compute_model_influence(fit_object, keep_pars=c("x1", "x2")) %>%
+    append_target_regressor_influence("x1") %>%
+    append_target_regressor_influence("x2")
 
 # The signals object tries to identify points to change certain
 # quantities of interest: the sign of an estimator, its significance,
 # or to produce a significant change of the opposite sign.
-signals <- GetInferenceSignals(model_grads)
+signals <- get_inference_signals(model_grads)
 
 
 ###################################
 # Interpreting signals
 
 # Signals is a list with one entry for every parameter for which you
-# ran AppendTargetRegressorInfluence.
+# ran append_target_regressor_influence.
 signals %>% names()
 
 # Each parameter has an analysis for each quantity of interest (QOI):
@@ -73,8 +73,8 @@ sprintf("Number of points needed to change x1 sign: %d",
 df$drop <- FALSE
 df$drop[signal$apip$inds] <- TRUE
 
-# Or with the GetWeightVector helper:
-df$drop_v2 <- GetWeightVector(signal$apip$inds, nrow(df), bool=TRUE, invert=TRUE)
+# Or with the get_weight_vector helper:
+df$drop_v2 <- get_weight_vector(signal$apip$inds, nrow(df), bool=TRUE, invert=TRUE)
 stopifnot(all(df$drop_v2 == df$drop))
 
 # Show that points that are dropped have large residuals and large |x1|
@@ -106,12 +106,12 @@ signals[["x2"]][["sign"]]$apip$inds
 # without the data points selected for the APIP.  There are convenient
 # wrapper functions that do this for every signal:
 
-reruns <- RerunForSignals(signals, model_grads)
+reruns <- rerun_for_signals(signals, model_grads)
 
-# PredictForSignals doesn't re-run, but it uses the linear approximation to
-# predict the changes, and returns a list in the same format as RerunForSignals.
+# predict_for_signals doesn't re-run, but it uses the linear approximation to
+# predict the changes, and returns a list in the same format as rerun_for_signals.
 # This can be convenient for comparing the reruns and predictions side-by-side.
-preds <- PredictForSignals(signals, model_grads)
+preds <- predict_for_signals(signals, model_grads)
 
 # The structure of the output is a list of lists, just like signals:
 reruns %>% names()
@@ -121,9 +121,9 @@ preds %>% names()
 preds[["x1"]] %>% names()
 
 # For easy summarization, you can convert the lists into dataframes.
-base_df <- GetModelFitInferenceDataframe(model_grads$model_fit, model_grads$param_infls)
-reruns_df <- GetSignalsAndRerunsDataframe(signals, reruns, model_grads)
-preds_df <- GetSignalsAndRerunsDataframe(signals, preds, model_grads)
+base_df <- get_model_fit_inference_df(model_grads$model_fit, model_grads$param_infls)
+reruns_df <- get_signals_and_reruns_df(signals, reruns, model_grads)
+preds_df <- get_signals_and_reruns_df(signals, preds, model_grads)
 
 # For example: when we drop n_drop points targeting a sign change in x1 and re-run
 # the regression, we can see how the x2 coefficient ("param"), standard error ("se"),
@@ -156,12 +156,12 @@ summary_df %>%
 # code is still there.  The plot shows the cumulative change in certain
 # quantities of interest as more and more points are dropped, as well as the
 # actual effect of dropping points given by the APIP.
-PlotSignal(model_grads, signals, "x1", "sign",
+plot_signal(model_grads, signals, "x1", "sign",
            reruns=reruns, apip_max=0.03)
 
 # Summaries comparing reruns and predictions for each signal.
 plots <-
     map(c("sign", "sig", "both"),
-        ~ PlotSignal(model_grads, signals, "x1", ., reruns=reruns, apip_max=0.03))
+        ~ plot_signal(model_grads, signals, "x1", ., reruns=reruns, apip_max=0.03))
 do.call(function(...) { grid.arrange(..., ncol=1) }, plots)
 

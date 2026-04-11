@@ -5,20 +5,20 @@
 
 #' Summarize the values of each QOI for each parameter for a given model_fit.
 #'@param model_fit `r docs$model_fit`
-#'@param param_infls A list of ParameterInferenceInfluence objects.
+#'@param param_infls A list of parameter_inference_influence objects.
 #'@return A dataframe summarizing the values of all quantities of interest
 #' in `param_infls` for `model_fit`.
 #'@export
-GetModelFitInferenceDataframe <- function(model_fit, param_infls) {
+get_model_fit_inference_df <- function(model_fit, param_infls) {
     if (is.null(model_fit)) {
       return(data.frame())
     }
-    stopifnot(inherits(model_fit, "ModelFit"))
+    stopifnot(inherits(model_fit, "model_fit"))
     stopifnot(all(names(param_infls) %in% model_fit$parameter_names))
 
     GetParameterInferenceDataframe <-
       function(model_fit, target_index, sig_num_ses) {
-        GetInferenceQOIs(param=model_fit$param[target_index],
+        get_inference_qois(param=model_fit$param[target_index],
                          se=model_fit$se[target_index],
                          sig_num_ses=sig_num_ses) |>
             purrr::imap_dfr(\(x, y) data.frame(metric=y, value=x))
@@ -29,7 +29,7 @@ GetModelFitInferenceDataframe <- function(model_fit, param_infls) {
     for (param_name in names(param_infls)) {
         param_infl <- param_infls[[param_name]]
         # We checked above that each parameter name is found.
-        target_index <- GetParameterIndex(model_fit, param_name)
+        target_index <- get_parameter_index(model_fit, param_name)
         summary_df <-
             GetParameterInferenceDataframe(
                 model_fit=model_fit,
@@ -44,7 +44,7 @@ GetModelFitInferenceDataframe <- function(model_fit, param_infls) {
 
 # The signals and reruns are expected to have a matching list structure,
 # which we enforce with this function.
-ValidateSignalsAndReruns <- function(signals, reruns) {
+validate_signals_and_reruns <- function(signals, reruns) {
   stopifnot(setequal(names(reruns), names(signals)))
   for (target_param_name in names(reruns)) {
       param_reruns  <- reruns[[target_param_name]]
@@ -53,9 +53,9 @@ ValidateSignalsAndReruns <- function(signals, reruns) {
       for (signal_name in names(param_reruns)) {
           rerun <- param_reruns[[signal_name]]
           signal <- param_signals[[signal_name]]
-          stopifnot(inherits(signal, "QOISignal"))
+          stopifnot(inherits(signal, "qoi_signal"))
           if (signal$apip$success) {
-            stopifnot(inherits(rerun, "ModelFit"))
+            stopifnot(inherits(rerun, "model_fit"))
           } else {
             stopifnot(is.null(rerun))
           }
@@ -65,11 +65,11 @@ ValidateSignalsAndReruns <- function(signals, reruns) {
 
 #' For signals and reruns lists, produce a dataframe summarizing the two.
 #'@export
-GetSignalsAndRerunsDataframe <- function(signals, reruns, model_grads) {
-  ValidateSignalsAndReruns(signals, reruns)
+get_signals_and_reruns_df <- function(signals, reruns, model_grads) {
+  validate_signals_and_reruns(signals, reruns)
 
   reruns_dfs <- purrr::map_depth(
-    reruns, 2, \(x) GetModelFitInferenceDataframe(x, model_grads$param_infls))
+    reruns, 2, \(x) get_model_fit_inference_df(x, model_grads$param_infls))
 
   rerun_df <-
       tibble::tibble(list=reruns_dfs) |>
@@ -103,9 +103,9 @@ GetSignalsAndRerunsDataframe <- function(signals, reruns, model_grads) {
 #' @return A dataframe with predictions, leaving out cumulatively more
 #' points according to the sorting QOI's influence scores.
 #' @export
-GetSortedInfluenceDf <- function(param_infl, sorting_qoi_name,
+get_sorted_influence_df <- function(param_infl, sorting_qoi_name,
                                  max_num_obs=Inf) {
-    stopifnot(inherits(param_infl, "ParameterInferenceInfluence"))
+    stopifnot(inherits(param_infl, "parameter_inference_influence"))
     stopifnot(sorting_qoi_name %in% param_infl$qoi_names)
     qoi_for_sorting <- param_infl[[sorting_qoi_name]]
 
@@ -137,7 +137,7 @@ GetSortedInfluenceDf <- function(param_infl, sorting_qoi_name,
 
 
 #' Plot influence scores, signals, and reruns.
-#' @param influence_df The output of [GetSortedInfluenceDf]
+#' @param influence_df The output of [get_sorted_influence_df]
 #' @param plot_num_dropped If TRUE, plot the number dropped on the x-axis.
 #' If FALSE (the default), plot the proportion dropped.
 #' @param apip_max The maximum value for the x-axis (as a number or proportion
@@ -147,7 +147,7 @@ GetSortedInfluenceDf <- function(param_infl, sorting_qoi_name,
 #' to include zero and plot a horizontal line.
 #'
 #' @return A plot.
-PlotInfluenceDf <- function(influence_df, signal, rerun_vals=NULL,
+plot_influence_df <- function(influence_df, signal, rerun_vals=NULL,
                             plot_num_dropped=FALSE,
                             apip_max=NULL,
                             include_y_zero=TRUE) {
@@ -218,9 +218,9 @@ PlotInfluenceDf <- function(influence_df, signal, rerun_vals=NULL,
 #' @param signal `r docs$signal`
 #' @return A plot for the specified signal.
 #'@export
-PlotSignal <- function(model_grads, signals, parameter_name, target_signal,
+plot_signal <- function(model_grads, signals, parameter_name, target_signal,
                        reruns=NULL, ...) {
-    stopifnot(inherits(model_grads, "ModelGrads"))
+    stopifnot(inherits(model_grads, "model_grads"))
     stopifnot(parameter_name %in% names(model_grads$param_infls))
     param_infl <- model_grads$param_infls[[parameter_name]]
 
@@ -229,19 +229,19 @@ PlotSignal <- function(model_grads, signals, parameter_name, target_signal,
     stopifnot(parameter_name %in% names(signals))
     stopifnot(target_signal %in%  names(signals[[parameter_name]]))
     signal <- signals[[parameter_name]][[target_signal]]
-    stopifnot(inherits(signal, "QOISignal"))
+    stopifnot(inherits(signal, "qoi_signal"))
 
     rerun_vals <- NULL
     if (!is.null(reruns)) {
-      ValidateSignalsAndReruns(signals, reruns)
+      validate_signals_and_reruns(signals, reruns)
       rerun <- reruns[[parameter_name]][[target_signal]]
       if (!is.null(rerun)) {
-        rerun_vals <- GetParameterInferenceQOIs(
+        rerun_vals <- get_parameter_inference_qois(
           rerun, parameter_name, sig_num_ses=param_infl$sig_num_ses)
       }
     }
 
-    influence_df <- GetSortedInfluenceDf(param_infl, signal$qoi$name)
-    plot <- PlotInfluenceDf(influence_df, signal, rerun_vals=rerun_vals, ...)
+    influence_df <- get_sorted_influence_df(param_infl, signal$qoi$name)
+    plot <- plot_influence_df(influence_df, signal, rerun_vals=rerun_vals, ...)
     return(plot)
 }
