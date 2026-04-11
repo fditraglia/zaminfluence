@@ -5,40 +5,6 @@ StopIfNotNumericScalar <- function(x) {
 }
 
 
-AssertNearlyEqual <- function(x, y, tol=1e-9, desc=NULL) {
-  diff_norm <- max(abs(x - y))
-  if (is.null(desc)) {
-    info_str <- sprintf("%e > %e", diff_norm, tol)
-  } else {
-    info_str <- sprintf("%s: %e > %e", desc, diff_norm, tol)
-  }
-  testthat::expect_true(diff_norm < tol, info=info_str)
-}
-
-
-AssertNearlyZero <- function(x, tol=1e-15, desc=NULL) {
-  x_norm <- max(abs(x))
-  if (is.null(desc)) {
-    info_str <- sprintf("%e > %e", x_norm, tol)
-  } else {
-    info_str <- sprintf("%s: %e > %e", desc, x_norm, tol)
-  }
-  testthat::expect_true(x_norm < tol, info=info_str)
-}
-
-
-
-# Compute the sandwich covariance, allowing se_group to be null.
-GetFitCovariance <- function(fit, se_group=NULL) {
-  if (is.null(se_group)) {
-    return(vcov(fit))
-  } else {
-    return(sandwich::vcovCL(fit, cluster=se_group, type="HC0", cadjust=FALSE))
-  }
-}
-
-
-
 GenerateRandomEffects <- function(num_obs, num_groups=NULL) {
   if (!is.null(num_groups)) {
     # Add random effects.  se_group must be zero-indexed.
@@ -53,7 +19,6 @@ GenerateRandomEffects <- function(num_obs, num_groups=NULL) {
 }
 
 
-#' @export
 GenerateRegressionData <- function(num_obs, param_true, x=NULL, num_groups=NULL) {
   x_dim <- length(param_true)
   if (is.null(x)) {
@@ -79,7 +44,6 @@ GenerateRegressionData <- function(num_obs, param_true, x=NULL, num_groups=NULL)
 }
 
 
-#' @export
 GenerateLogitData <- function(num_obs, param_true, x=NULL) {
   x_dim <- length(param_true)
   if (is.null(x)) {
@@ -95,7 +59,6 @@ GenerateLogitData <- function(num_obs, param_true, x=NULL) {
 }
 
 
-#' @export
 GenerateIVRegressionData <- function(num_obs, param_true, num_groups=NULL) {
   # Simulate some IV data
 
