@@ -32,7 +32,7 @@ validate_QOIInfluence <- function(qoi) {
       infl_from_diff <- diff(signed_infl$infl_cumsum)
       # Check that the influence scores match
       stopifnot(all(
-        qoi$infl[signed_infl$ordered_inds] ==
+        qoi$infl[signed_infl$infl_inds] ==
         infl_from_diff))
       # Check that the influence scores are sorted
       stopifnot(all(diff(infl_from_diff * sign) <= 0))

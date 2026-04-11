@@ -64,8 +64,7 @@ new_ModelGrads <- function(
     param_grad,
     se_grad,
     param_infls,
-    RerunFun,
-    PredictFun) {
+    RerunFun) {
   return(structure(
     list(model_fit=model_fit,
 

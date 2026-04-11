@@ -92,7 +92,6 @@ test_that("NAN_in_APIP_issue25", {
       AppendTargetRegressorInfluence("x1")
   signals <- GetInferenceSignals(model_grads)
 
-  expect_error()
   signals$x1$sign$apip
   testthat::expect_true(is.na(signals$x1$sign$apip$inds))
   testthat::expect_false(signals$x1$sign$apip$success)
