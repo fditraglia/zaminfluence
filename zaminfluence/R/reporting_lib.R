@@ -13,7 +13,7 @@ GetModelFitInferenceDataframe <- function(model_fit, param_infls) {
     if (is.null(model_fit)) {
       return(data.frame())
     }
-    stopifnot(class(model_fit) == "ModelFit")
+    stopifnot(inherits(model_fit, "ModelFit"))
     stopifnot(all(names(param_infls) %in% model_fit$parameter_names))
 
     GetParameterInferenceDataframe <-
@@ -53,9 +53,9 @@ ValidateSignalsAndReruns <- function(signals, reruns) {
       for (signal_name in names(param_reruns)) {
           rerun <- param_reruns[[signal_name]]
           signal <- param_signals[[signal_name]]
-          stopifnot(class(signal) == "QOISignal")
+          stopifnot(inherits(signal, "QOISignal"))
           if (signal$apip$success) {
-            stopifnot(class(rerun) == "ModelFit")
+            stopifnot(inherits(rerun, "ModelFit"))
           } else {
             stopifnot(is.null(rerun))
           }
@@ -105,7 +105,7 @@ GetSignalsAndRerunsDataframe <- function(signals, reruns, model_grads) {
 #' @export
 GetSortedInfluenceDf <- function(param_infl, sorting_qoi_name,
                                  max_num_obs=Inf) {
-    stopifnot(class(param_infl) == "ParameterInferenceInfluence")
+    stopifnot(inherits(param_infl, "ParameterInferenceInfluence"))
     stopifnot(sorting_qoi_name %in% param_infl$qoi_names)
     qoi_for_sorting <- param_infl[[sorting_qoi_name]]
 
@@ -220,7 +220,7 @@ PlotInfluenceDf <- function(influence_df, signal, rerun_vals=NULL,
 #'@export
 PlotSignal <- function(model_grads, signals, parameter_name, target_signal,
                        reruns=NULL, ...) {
-    stopifnot(class(model_grads) == "ModelGrads")
+    stopifnot(inherits(model_grads, "ModelGrads"))
     stopifnot(parameter_name %in% names(model_grads$param_infls))
     param_infl <- model_grads$param_infls[[parameter_name]]
 
@@ -229,7 +229,7 @@ PlotSignal <- function(model_grads, signals, parameter_name, target_signal,
     stopifnot(parameter_name %in% names(signals))
     stopifnot(target_signal %in%  names(signals[[parameter_name]]))
     signal <- signals[[parameter_name]][[target_signal]]
-    stopifnot(class(signal) == "QOISignal")
+    stopifnot(inherits(signal, "QOISignal"))
 
     rerun_vals <- NULL
     if (!is.null(reruns)) {

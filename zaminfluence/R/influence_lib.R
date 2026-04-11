@@ -24,7 +24,7 @@ new_QOIInfluence <- function(
 
 
 validate_QOIInfluence <- function(qoi) {
-    stopifnot(class(qoi) == "QOIInfluence")
+    stopifnot(inherits(qoi, "QOIInfluence"))
     CheckSortedInfluence <- function(signed_infl, sign) {
       stopifnot(all(signed_infl$infl_cumsum * sign > 0))
       stopifnot(length(signed_infl$infl_inds) ==
@@ -87,7 +87,7 @@ new_APIP <- function(n, prop, inds, success) {
 
 
 validate_APIP <- function(apip) {
-  stopifnot(class(apip) == "APIP")
+  stopifnot(inherits(apip, "APIP"))
   StopIfNotNumericScalar(apip$n)
   StopIfNotNumericScalar(apip$prop)
   if (any(is.na(apip$inds))) {
@@ -126,7 +126,7 @@ APIP <- function(n_drop, num_obs, inds_drop) {
 #' `inds`: `r docs$drop_inds`
 #' @export
 GetAPIPForQOI <- function(qoi, signal) {
-    stopifnot(class(qoi) == "QOIInfluence")
+    stopifnot(inherits(qoi, "QOIInfluence"))
     stopifnot(is.numeric(signal))
     stopifnot(length(signal) == 1)
 
@@ -223,7 +223,7 @@ GetWeightVector <- function(drop_inds, num_obs=NULL,
 #' @return `r docs$drop_inds`
 #' @export
 GetAMIS <- function(qoi, sign, n_drop) {
-  stopifnot(class(qoi) == "QOIInfluence")
+  stopifnot(inherits(qoi, "QOIInfluence"))
   if (!(sign %in% c("pos", "neg"))) {
     stop("Sign must be either `pos` or `neg`.")
   }
@@ -255,7 +255,7 @@ GetAMIS <- function(qoi, sign, n_drop) {
 #' the specified number of points.
 #' @export
 GetAMIP <- function(qoi, sign, n_drop) {
-  stopifnot(class(qoi) == "QOIInfluence")
+  stopifnot(inherits(qoi, "QOIInfluence"))
   if (n_drop == 0) {
     return(0)
   }
@@ -271,6 +271,6 @@ GetAMIP <- function(qoi, sign, n_drop) {
 #' observations.
 #'@export
 PredictChange <- function(qoi, drop_inds) {
-    stopifnot(class(qoi) == "QOIInfluence")
+    stopifnot(inherits(qoi, "QOIInfluence"))
     return(-1 * sum(qoi$infl[drop_inds]))
 }

@@ -10,11 +10,11 @@
 #' @return A nested list of reruns matching the structure of `signals`.
 #' @export
 RerunForSignals <- function(signals, model_grads, RerunFun=NULL, verbose=FALSE) {
-    stopifnot(class(model_grads) == "ModelGrads")
+    stopifnot(inherits(model_grads, "ModelGrads"))
     stopifnot(setequal(names(signals), names(model_grads$param_infls)))
     for (param_name in names(signals)) {
         for (signal in signals[[param_name]]) {
-            stopifnot(class(signal) == "QOISignal")
+            stopifnot(inherits(signal, "QOISignal"))
         }
     }
 

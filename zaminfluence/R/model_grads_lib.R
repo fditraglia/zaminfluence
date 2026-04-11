@@ -16,7 +16,7 @@ new_ModelFit <- function(
 
 
 validate_ModelFit <- function(model_fit) {
-  stopifnot(class(model_fit) == "ModelFit")
+  stopifnot(inherits(model_fit, "ModelFit"))
   StopIfNotNumericScalar(model_fit$num_obs)
   StopIfNotNumericScalar(model_fit$parameter_dim)
 
@@ -81,7 +81,7 @@ new_ModelGrads <- function(
 
 
 validate_ModelGrads <- function(model_grads) {
-  stopifnot(class(model_grads) == "ModelGrads")
+  stopifnot(inherits(model_grads, "ModelGrads"))
   validate_ModelFit(model_grads$model_fit)
   model_fit <- model_grads$model_fit
 
@@ -97,10 +97,10 @@ validate_ModelGrads <- function(model_grads) {
   CheckGradDim(model_grads$param_grad)
   CheckGradDim(model_grads$se_grad)
 
-  stopifnot(class(model_grads$param_infls) == "list")
+  stopifnot(is.list(model_grads$param_infls))
   stopifnot(all(names(model_grads$param_infls) %in% grad_pars))
   for (param_infl in model_grads$param_infls) {
-    stopifnot(class(param_infl) == "ParameterInferenceInfluence")
+    stopifnot(inherits(param_infl, "ParameterInferenceInfluence"))
   }
 
   return(invisible(model_grads))
@@ -109,7 +109,7 @@ validate_ModelGrads <- function(model_grads) {
 
 #'@export
 PredictModelFit <- function(model_grads, weights) {
-    stopifnot(class(model_grads) == "ModelGrads")
+    stopifnot(inherits(model_grads, "ModelGrads"))
     stopifnot(is.numeric(weights))
 
     model_fit <- model_grads$model_fit
