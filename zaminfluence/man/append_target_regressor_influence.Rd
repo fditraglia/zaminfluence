@@ -14,7 +14,7 @@ append_target_regressor_influence(
 \item{model_grads}{A model gradient object (e.g. as produced by \link{compute_model_influence})}
 
 \item{target_parameter}{The string naming a regressor (must be an
-entry in \link{model_grads$parameter_names}).}
+entry in \code{model_grads$parameter_names}).}
 
 \item{sig_num_ses}{How wide the confidence interval is, as a number of standard errors.}
 }

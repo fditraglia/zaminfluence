@@ -8,11 +8,11 @@ to ordinary regression.}
 compute_iv_regression_results(iv_res, weights = NULL, se_group = NULL)
 }
 \arguments{
+\item{iv_res}{The iv regression result, i.e, the output of \code{\link[ivreg:ivreg]{ivreg::ivreg()}}.}
+
 \item{weights}{Optional.  A vector of weights.  If unset, use the original weights.}
 
 \item{se_group}{Optional. The standard error grouping variable.}
-
-\item{lm_result}{The regression result, i.e, the output of \code{\link[=lm]{lm()}}.}
 }
 \value{
 A list containing the regression coefficients and standard errors.

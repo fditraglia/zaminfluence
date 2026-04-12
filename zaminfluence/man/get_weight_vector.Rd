@@ -15,7 +15,11 @@ get_weight_vector(
 \arguments{
 \item{drop_inds}{\verb{The indices to drop (in the order of the original data)}}
 
-\item{num_obs}{The number of observations in the original data.}
+\item{num_obs}{The number of observations in the original data. If \code{NULL},
+inferred from \code{length(orig_weights)}.}
+
+\item{orig_weights}{(Optional) The original observation weights. Required
+if \code{num_obs} is not provided; defaults to a vector of ones otherwise.}
 
 \item{bool}{(Optional)  If true, return a boolean vector.  Otherwise,
 return a numeric vector (with ones and zeros).}

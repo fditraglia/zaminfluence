@@ -6,6 +6,20 @@
 \usage{
 get_signals_and_reruns_df(signals, reruns, model_grads)
 }
+\arguments{
+\item{signals}{A nested list of \code{qoi_signal} objects (e.g. the output of
+\code{\link[=get_inference_signals]{get_inference_signals()}}).}
+
+\item{reruns}{A nested list with the same structure as \code{signals}, where
+each leaf is either a \code{model_fit} (on successful rerun) or \code{NULL}
+(e.g. the output of \code{\link[=rerun_for_signals]{rerun_for_signals()}} or \code{\link[=predict_for_signals]{predict_for_signals()}}).}
+
+\item{model_grads}{A model gradient object (e.g. as produced by \link{compute_model_influence})}
+}
+\value{
+A dataframe joining each signal's summary with the rerun's
+inference quantities of interest, one row per (parameter, signal).
+}
 \description{
 For signals and reruns lists, produce a dataframe summarizing the two.
 }

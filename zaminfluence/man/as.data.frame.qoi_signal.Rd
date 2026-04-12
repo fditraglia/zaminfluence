@@ -4,10 +4,16 @@
 \alias{as.data.frame.qoi_signal}
 \title{Produce a tidy dataframe summarizing a signal.}
 \usage{
-\method{as.data.frame}{qoi_signal}(signal)
+\method{as.data.frame}{qoi_signal}(x, row.names = NULL, optional = FALSE, ...)
 }
 \arguments{
-\item{signal}{A signal object (e.g. one of the elements of the list produced by \link{get_inference_signals_for_parameter}).}
+\item{x}{A signal object (e.g. one of the elements of the list produced by \link{get_inference_signals_for_parameter}).}
+
+\item{row.names}{Unused; accepted for \code{as.data.frame()} generic consistency.}
+
+\item{optional}{Unused; accepted for \code{as.data.frame()} generic consistency.}
+
+\item{...}{Unused; accepted for \code{as.data.frame()} generic consistency.}
 }
 \description{
 Produce a tidy dataframe summarizing a signal.

@@ -11,9 +11,16 @@ qoi_influence(infl, base_value, name, num_obs = NULL)
 in the same order as the original data.}
 
 \item{base_value}{The value of the quantity of interest at the original fit.}
+
+\item{name}{Character label identifying this QOI (e.g. \code{"param"},
+\code{"param_mzse"}, \code{"param_pzse"}, \code{"se"}).}
+
+\item{num_obs}{Optional integer giving the original number of observations.
+Defaults to \code{length(infl)}; set it explicitly when \code{infl} has been
+restricted to a subset (e.g. zero-weight observations dropped).}
 }
 \value{
-See "Quantity of Interest" in README.md
+A \code{qoi_influence} S3 object (see \code{inst/architecture.md}).
 }
 \description{
 Process a vector of influence scores to produce sorted influence scores.

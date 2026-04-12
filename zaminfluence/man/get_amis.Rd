@@ -9,6 +9,9 @@ get_amis(qoi, sign, n_drop)
 \arguments{
 \item{qoi}{\verb{A quantity of interest object (e.g. as produced by [qoi_influence]).}}
 
+\item{sign}{Either \code{"pos"} or \code{"neg"}: whether to return the points with
+the most positive or the most negative influence scores.}
+
 \item{n_drop}{The number of points to drop (we will round up).}
 }
 \value{

@@ -16,6 +16,11 @@ plot_influence_df(
 \arguments{
 \item{influence_df}{The output of \link{get_sorted_influence_df}}
 
+\item{signal}{A signal object (e.g. one of the elements of the list produced by \link{get_inference_signals_for_parameter}).}
+
+\item{rerun_vals}{(Optional) Named list with entries \code{param}, \code{param_mzse},
+\code{param_pzse} giving refit values to overlay on the plot.}
+
 \item{plot_num_dropped}{If TRUE, plot the number dropped on the x-axis.
 If FALSE (the default), plot the proportion dropped.}
 
@@ -24,8 +29,6 @@ according to the value of \code{plot_num_dropped}).}
 
 \item{include_y_zero}{(Optional) If TRUE (the default), force the y-axis
 to include zero and plot a horizontal line.}
-
-\item{signals}{(Optional) A list of signals to plot.}
 }
 \value{
 A plot.

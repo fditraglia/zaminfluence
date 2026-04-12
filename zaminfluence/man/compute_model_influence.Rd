@@ -7,11 +7,11 @@
 compute_model_influence(fit_object, se_group = NULL, keep_pars = NULL)
 }
 \arguments{
+\item{fit_object}{The fit from \code{\link[=lm]{lm()}} or \code{\link[ivreg:ivreg]{ivreg::ivreg()}}.}
+
 \item{se_group}{Optional. The standard error grouping variable.}
 
 \item{keep_pars}{Optional. The names of parameters for which to compute derivatives.}
-
-\item{model_fit}{The fit from \code{\link[=lm]{lm()}} or \code{\link[ivreg:ivreg]{ivreg::ivreg()}}.}
 }
 \value{
 A model gradient object (e.g. as produced by \link{compute_model_influence})

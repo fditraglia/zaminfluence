@@ -2,7 +2,7 @@
 % Please edit documentation in R/reporting_lib.R
 \name{plot_signal}
 \alias{plot_signal}
-\title{Plot influence scores, signals, and reruns.}
+\title{Plot influence scores, signals, and reruns for one signal.}
 \usage{
 plot_signal(
   model_grads,
@@ -14,13 +14,26 @@ plot_signal(
 )
 }
 \arguments{
-\item{param_infl}{A parameter influence object (e.g. as produced by \link{append_target_regressor_influence}).}
+\item{model_grads}{A model gradient object (e.g. as produced by \link{compute_model_influence})}
 
-\item{signal}{A signal object (e.g. one of the elements of the list produced by \link{get_inference_signals_for_parameter}).}
+\item{signals}{A nested list of signals (e.g. output of
+\code{\link[=get_inference_signals]{get_inference_signals()}}).}
+
+\item{parameter_name}{The name of the parameter whose signal to plot;
+must be an entry of \code{model_grads$param_infls}.}
+
+\item{target_signal}{The name of the signal within \code{signals[[parameter_name]]}
+to plot (\code{"sign"}, \code{"sig"}, or \code{"both"}).}
+
+\item{reruns}{(Optional) A nested list of reruns matching the structure
+of \code{signals} (e.g. output of \code{\link[=rerun_for_signals]{rerun_for_signals()}}); refit values for
+\code{target_signal} are overlaid on the plot.}
+
+\item{...}{Additional arguments passed to \code{\link[=plot_influence_df]{plot_influence_df()}}.}
 }
 \value{
-A plot for the specified signal.
+A ggplot object.
 }
 \description{
-Plot influence scores, signals, and reruns.
+Plot influence scores, signals, and reruns for one signal.
 }
