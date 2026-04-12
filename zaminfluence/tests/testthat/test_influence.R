@@ -22,7 +22,10 @@ generate_test_instance <- function(do_iv, do_grouping) {
         # IV:
         x_names <- sprintf("x%d", 1:x_dim)
         z_names <- sprintf("z%d", 1:x_dim)
-        reg_form <- formula(sprintf("y ~ %s - 1 | %s - 1",
+        # Include intercept to work around ivreg 0.6-7 bug with single
+        # endogenous variable and no exogenous regressors (inst is a vector,
+        # not a matrix, causing `inst[, -endo, drop=FALSE]` to fail).
+        reg_form <- formula(sprintf("y ~ %s | %s",
                                     paste(x_names, collapse=" + "),
                                     paste(z_names, collapse=" + ")))
         fit_object <- ivreg(data=df, formula = reg_form,

@@ -63,13 +63,13 @@ generate_iv_regression_data <- function(num_obs, param_true, num_groups=NULL) {
   # Simulate some IV data
 
   x_dim <- length(param_true)
-  x <- rnorm(num_obs * x_dim) |> matrix(nrow=num_obs)
-  x_rot <- diag(x_dim) + rep(0.2, x_dim ^ 2) |> matrix(nrow=x_dim)
+  x <- matrix(rnorm(num_obs * x_dim), nrow=num_obs)
+  x_rot <- diag(x_dim) + matrix(rep(0.2, x_dim ^ 2), nrow=x_dim)
   x <- x %*% x_rot
   x <- x - rep(colMeans(x), each=num_obs)
 
-  z <- rnorm(num_obs * x_dim) |> matrix(nrow=num_obs)
-  z_rot <- diag(x_dim) + rep(0.2, x_dim ^ 2) |> matrix(nrow=x_dim)
+  z <- matrix(rnorm(num_obs * x_dim), nrow=num_obs)
+  z_rot <- diag(x_dim) + matrix(rep(0.2, x_dim ^ 2), nrow=x_dim)
   z <- z %*% z_rot + x
   z <- z - rep(colMeans(z), each=num_obs)
 

@@ -29,13 +29,13 @@ validate_qoi_influence <- function(qoi) {
       stopifnot(all(signed_infl$infl_cumsum * sign > 0))
       stopifnot(length(signed_infl$infl_inds) ==
                 length(signed_infl$infl_cumsum))
-      infl_from_diff <- diff(signed_infl$infl_cumsum)
-      # Check that the influence scores match
-      stopifnot(all(
-        qoi$infl[signed_infl$infl_inds] ==
-        infl_from_diff))
-      # Check that the influence scores are sorted
-      stopifnot(all(diff(infl_from_diff * sign) <= 0))
+      # Check that the sorted influence scores are consistent with the
+      # cumulative sum: infl_cumsum[k] == sum(infl[infl_inds[1:k]]).
+      sorted_infl <- qoi$infl[signed_infl$infl_inds]
+      stopifnot(all(cumsum(sorted_infl) == signed_infl$infl_cumsum))
+      # Check that the influence scores are sorted in the expected direction
+      # (most-extreme first, so diffs move toward zero = opposite of `sign`).
+      stopifnot(all(diff(sorted_infl * sign) <= 0))
     }
     check_sorted_influence(qoi$pos, 1)
     check_sorted_influence(qoi$neg, -1)
