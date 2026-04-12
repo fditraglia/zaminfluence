@@ -36,7 +36,21 @@ validate_parameter_inference_influence <- function(param_infl) {
 }
 
 
-#'@export
+#' Compute the inference quantities of interest for a single parameter.
+#'
+#' Returns the four scalar quantities on which `zaminfluence` operates:
+#' the point estimate `param`, its standard error `se`, and the two
+#' confidence-interval endpoints `param_mzse` / `param_pzse`.
+#'
+#' @param model_fit `r docs$model_fit`
+#' @param target_parameter Character name of a parameter in
+#'   `model_fit$parameter_names`.
+#' @param sig_num_ses `r docs$sig_num_ses`
+#'
+#' @return A list with entries `param`, `se`, `param_mzse`, `param_pzse`,
+#'   and `target_parameter`.
+#'
+#' @export
 get_parameter_inference_qois <- function(model_fit, target_parameter,
                                       sig_num_ses=qnorm(0.975)) {
   stopifnot(inherits(model_fit, "model_fit"))
@@ -123,7 +137,7 @@ parameter_inference_influence <- function(model_grads, target_parameter,
 #' Compute the influence scores for a particular parameter.
 #' @param model_grads `r docs$model_grads`
 #' @param target_parameter The string naming a regressor (must be an
-#' entry in [model_grads$parameter_names]).
+#' entry in `model_grads$parameter_names`).
 #' @param sig_num_ses `r docs$sig_num_ses`
 #'
 #' @return The original `model_grads`, with an entry
@@ -146,6 +160,13 @@ append_target_regressor_influence <- function(model_grads, target_parameter,
 }
 
 
+#' Extract the base values of each QOI from a parameter influence object.
+#'
+#' @param param_infl `r docs$param_infl`
+#'
+#' @return A named numeric vector with entries `param`, `se`, `param_mzse`,
+#'   `param_pzse` giving the QOIs at the original fit.
+#'
 #' @export
 get_base_values <- function(param_infl) {
   stopifnot(inherits(param_infl, "parameter_inference_influence"))
@@ -282,14 +303,17 @@ get_inference_signals_for_parameter <- function(param_infl) {
 
 
 #' Produce a tidy dataframe summarizing a signal.
-#' @param signal `r docs$signal`
+#' @param x `r docs$signal`
+#' @param row.names Unused; accepted for `as.data.frame()` generic consistency.
+#' @param optional Unused; accepted for `as.data.frame()` generic consistency.
+#' @param ... Unused; accepted for `as.data.frame()` generic consistency.
 #'
-#'@export
-as.data.frame.qoi_signal <- function(signal) {
+#' @export
+as.data.frame.qoi_signal <- function(x, row.names=NULL, optional=FALSE, ...) {
   data.frame(
-      qoi_name=signal$qoi$name,
-      description=signal$description,
-      signal=signal$signal,
-      num_removed=signal$apip$n,
-      prop_removed=signal$apip$prop)
+      qoi_name=x$qoi$name,
+      description=x$description,
+      signal=x$signal,
+      num_removed=x$apip$n,
+      prop_removed=x$apip$prop)
 }

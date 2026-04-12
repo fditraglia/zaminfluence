@@ -64,7 +64,18 @@ validate_signals_and_reruns <- function(signals, reruns) {
 }
 
 #' For signals and reruns lists, produce a dataframe summarizing the two.
-#'@export
+#'
+#' @param signals A nested list of `qoi_signal` objects (e.g. the output of
+#'   [get_inference_signals()]).
+#' @param reruns A nested list with the same structure as `signals`, where
+#'   each leaf is either a `model_fit` (on successful rerun) or `NULL`
+#'   (e.g. the output of [rerun_for_signals()] or [predict_for_signals()]).
+#' @param model_grads `r docs$model_grads`
+#'
+#' @return A dataframe joining each signal's summary with the rerun's
+#'   inference quantities of interest, one row per (parameter, signal).
+#'
+#' @export
 get_signals_and_reruns_df <- function(signals, reruns, model_grads) {
   validate_signals_and_reruns(signals, reruns)
 
@@ -138,11 +149,13 @@ get_sorted_influence_df <- function(param_infl, sorting_qoi_name,
 
 #' Plot influence scores, signals, and reruns.
 #' @param influence_df The output of [get_sorted_influence_df]
+#' @param signal `r docs$signal`
+#' @param rerun_vals (Optional) Named list with entries `param`, `param_mzse`,
+#'   `param_pzse` giving refit values to overlay on the plot.
 #' @param plot_num_dropped If TRUE, plot the number dropped on the x-axis.
 #' If FALSE (the default), plot the proportion dropped.
 #' @param apip_max The maximum value for the x-axis (as a number or proportion
 #' according to the value of `plot_num_dropped`).
-#' @param signals (Optional) A list of signals to plot.
 #' @param include_y_zero (Optional) If TRUE (the default), force the y-axis
 #' to include zero and plot a horizontal line.
 #'
@@ -213,11 +226,22 @@ plot_influence_df <- function(influence_df, signal, rerun_vals=NULL,
 }
 
 
-#' Plot influence scores, signals, and reruns.
-#' @param param_infl `r docs$param_infl`
-#' @param signal `r docs$signal`
-#' @return A plot for the specified signal.
-#'@export
+#' Plot influence scores, signals, and reruns for one signal.
+#'
+#' @param model_grads `r docs$model_grads`
+#' @param signals A nested list of signals (e.g. output of
+#'   [get_inference_signals()]).
+#' @param parameter_name The name of the parameter whose signal to plot;
+#'   must be an entry of `model_grads$param_infls`.
+#' @param target_signal The name of the signal within `signals[[parameter_name]]`
+#'   to plot (`"sign"`, `"sig"`, or `"both"`).
+#' @param reruns (Optional) A nested list of reruns matching the structure
+#'   of `signals` (e.g. output of [rerun_for_signals()]); refit values for
+#'   `target_signal` are overlaid on the plot.
+#' @param ... Additional arguments passed to [plot_influence_df()].
+#'
+#' @return A ggplot object.
+#' @export
 plot_signal <- function(model_grads, signals, parameter_name, target_signal,
                        reruns=NULL, ...) {
     stopifnot(inherits(model_grads, "model_grads"))

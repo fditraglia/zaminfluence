@@ -15,9 +15,7 @@ Depends: R (>= 4.1.0)
 Imports:
     dplyr,
     ggplot2,
-    latex2exp,
     purrr,
-    sandwich,
     tibble,
     tidyr,
     torch
@@ -25,6 +23,7 @@ Suggests:
     ivreg,
     gridExtra,
     numDeriv,
+    sandwich,
     testthat (>= 3.0.0)
 License: Apache License (>= 2)
 Encoding: UTF-8

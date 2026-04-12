@@ -35,7 +35,28 @@ validate_model_fit <- function(model_fit) {
 
 
 
-#'@export
+#' Construct a model_fit S3 object.
+#'
+#' A `model_fit` bundles the outputs of a single model fit in a form that the
+#' rest of `zaminfluence` can consume. Instances are normally produced by
+#' [compute_model_influence()] and its dispatchers; call this constructor
+#' directly only when wiring up a new model backend.
+#'
+#' @param fit_object The underlying fit object (e.g. the return value of
+#'   [lm()], [ivreg::ivreg()], or [glm()]).
+#' @param num_obs Integer. The number of observations used in the fit.
+#' @param param Numeric vector of point estimates.
+#' @param se Numeric vector of standard errors, one per entry of `param`.
+#' @param parameter_names Character vector of parameter names. If `NULL`,
+#'   defaults to `theta1`, `theta2`, ....
+#' @param weights Numeric vector of length `num_obs`. If `NULL`, defaults
+#'   to all 1s.
+#' @param se_group Optional grouping vector of length `num_obs` used for
+#'   grouped (clustered) standard errors.
+#'
+#' @return A validated `model_fit` object.
+#'
+#' @export
 model_fit <- function(fit_object, num_obs, param, se,
                      parameter_names=NULL, weights=NULL, se_group=NULL) {
     if (is.null(weights)) {
@@ -107,7 +128,19 @@ validate_model_grads <- function(model_grads) {
 }
 
 
-#'@export
+#' Predict a refit using the linear approximation in `model_grads`.
+#'
+#' Uses the parameter and SE gradients stored in `model_grads` to approximate
+#' what the fit would look like at a new weight vector, without actually
+#' refitting the model.
+#'
+#' @param model_grads `r docs$model_grads`
+#' @param weights Numeric vector of new weights of length
+#'   `model_grads$model_fit$num_obs`.
+#'
+#' @return A `model_fit` object containing the predicted `param` and `se`.
+#'
+#' @export
 predict_model_fit <- function(model_grads, weights) {
     stopifnot(inherits(model_grads, "model_grads"))
     stopifnot(is.numeric(weights))
@@ -133,7 +166,26 @@ predict_model_fit <- function(model_grads, weights) {
 
 
 
-#'@export
+#' Construct a model_grads S3 object.
+#'
+#' A `model_grads` packages a fitted model together with the gradients of its
+#' parameters and standard errors with respect to the observation weights.
+#' Instances are normally produced by [compute_model_influence()]; call this
+#' constructor directly only when wiring up a new model backend.
+#'
+#' @param model_fit A `model_fit` object at the original weights.
+#' @param param_grad Numeric matrix of parameter gradients.
+#'   Dimensions are `k x num_obs`, where `k` is the number of kept parameters
+#'   and `num_obs` is the number of observations. Rownames must be the kept
+#'   parameter names (a subset of `model_fit$parameter_names`).
+#' @param se_grad Numeric matrix of standard-error gradients, same shape as
+#'   `param_grad`. Rownames must match `param_grad`.
+#' @param rerun_fun Function taking a weight vector and returning a
+#'   `model_fit` at those weights.
+#'
+#' @return A validated `model_grads` object.
+#'
+#' @export
 model_grads <- function(
     model_fit,
     param_grad,
@@ -161,23 +213,33 @@ model_grads <- function(
 
 
 
-#'@export
-get_parameter_index <- function(m, par_name) {
+#' Look up the positional indices of named parameters.
+#'
+#' @param x A `model_fit` or `model_grads` object.
+#' @param par_names Character vector of parameter names to look up.
+#'
+#' @return A named integer vector giving the index of each requested
+#'   parameter in `x$parameter_names`.
+#'
+#' @export
+get_parameter_index <- function(x, par_names) {
   UseMethod("get_parameter_index")
 }
 
 
-#'@export
-get_parameter_index.model_grads <- function(model_grads, par_names) {
+#' @rdname get_parameter_index
+#' @export
+get_parameter_index.model_grads <- function(x, par_names) {
   return(get_parameter_index_local(
-    model_grads$parameter_names, par_names, object_class="model_grads"))
+    x$parameter_names, par_names, object_class="model_grads"))
 }
 
 
-#'@export
-get_parameter_index.model_fit <- function(model_fit, par_names) {
+#' @rdname get_parameter_index
+#' @export
+get_parameter_index.model_fit <- function(x, par_names) {
   return(get_parameter_index_local(
-    model_fit$parameter_names, par_names, object_class="model_fit"))
+    x$parameter_names, par_names, object_class="model_fit"))
 }
 
 

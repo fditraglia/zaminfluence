@@ -47,8 +47,13 @@ validate_qoi_influence <- function(qoi) {
 #' @param infl A vector of influence scores for a quantity of interest,
 #' in the same order as the original data.
 #' @param base_value The value of the quantity of interest at the original fit.
+#' @param name Character label identifying this QOI (e.g. `"param"`,
+#'   `"param_mzse"`, `"param_pzse"`, `"se"`).
+#' @param num_obs Optional integer giving the original number of observations.
+#'   Defaults to `length(infl)`; set it explicitly when `infl` has been
+#'   restricted to a subset (e.g. zero-weight observations dropped).
 #'
-#' @return See "Quantity of Interest" in README.md
+#' @return A `qoi_influence` S3 object (see `inst/architecture.md`).
 #' @export
 qoi_influence <- function(infl, base_value, name, num_obs=NULL) {
     if (is.null(num_obs)) {
@@ -157,7 +162,10 @@ get_apip_for_qoi <- function(qoi, signal) {
 #' Compute a weight vector for a set of dropped indices.
 #'
 #' @param drop_inds ``r docs$drop_inds``
-#' @param num_obs The number of observations in the original data.
+#' @param num_obs The number of observations in the original data. If `NULL`,
+#'   inferred from `length(orig_weights)`.
+#' @param orig_weights (Optional) The original observation weights. Required
+#'   if `num_obs` is not provided; defaults to a vector of ones otherwise.
 #' @param bool (Optional)  If true, return a boolean vector.  Otherwise,
 #' return a numeric vector (with ones and zeros).
 #' @param invert (Optional) If TRUE, return a vector that retains the
@@ -218,6 +226,8 @@ get_weight_vector <- function(drop_inds, num_obs=NULL,
 
 #' Compute the approximate maximally-influential set (AMIS).
 #' @param qoi ``r docs$qoi``
+#' @param sign Either `"pos"` or `"neg"`: whether to return the points with
+#'   the most positive or the most negative influence scores.
 #' @param n_drop The number of points to drop (we will round up).
 #'
 #' @return `r docs$drop_inds`
@@ -249,6 +259,8 @@ get_amis <- function(qoi, sign, n_drop) {
 
 #' Compute the approximate maximum influence perturbation (AMIP).
 #' @param qoi ``r docs$qoi``
+#' @param sign Either `"pos"` or `"neg"`: the sign of the influence scores
+#'   to aggregate (passed through to [get_amis()]).
 #' @param n_drop The number of points to drop (we will round up).
 #'
 #' @return The approximate largest change that can be produced by dropping

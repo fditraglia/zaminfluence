@@ -263,7 +263,7 @@ compute_regression_results <- function(lm_result, weights=NULL, se_group=NULL) {
 #' Run an IV regression using zaminfluence code.  This should be identical
 #' to ordinary regression.
 #'
-#' @param lm_result `r docs$lm_result`
+#' @param iv_res `r docs$iv_res`
 #' @param weights `r docs$weights`
 #' @param se_group `r docs$se_group`
 #'
@@ -426,7 +426,7 @@ compute_iv_regression_influence <- function(
 
 
 #' Compute the influence functions for all regressors given a model fit.
-#' @param model_fit `r docs$model_fit`
+#' @param fit_object `r docs$model_fit`
 #' @param se_group `r docs$se_group`
 #' @param keep_pars `r docs$keep_pars`
 #'
