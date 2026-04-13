@@ -94,7 +94,8 @@ test_that("logit derivatives match numerical derivatives", {
     model_grads <- compute_model_influence(glm_res, keep_pars=cfg$keep_pars)
     cat(" Testing logit derivatives: p =", length(cfg$param),
         ", weighted =", !all(cfg$weights == 1),
-        ", keep_pars =", paste(cfg$keep_pars %||% "all", collapse=","), "\n")
+        ", keep_pars =", paste(
+          if (is.null(cfg$keep_pars)) "all" else cfg$keep_pars, collapse=","), "\n")
     TestLogitDerivs(model_grads)
   }
 })

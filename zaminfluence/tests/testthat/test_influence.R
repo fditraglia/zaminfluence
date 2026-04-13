@@ -216,6 +216,7 @@ TestInfluence <- function(test_instance) {
 
 
 test_that("influence_computations_correct", {
+  skip_if_not_installed("ivreg")
   set.seed(42)
   for (do_iv in c(TRUE, FALSE)) {
     for (do_grouping in c(TRUE, FALSE)) {

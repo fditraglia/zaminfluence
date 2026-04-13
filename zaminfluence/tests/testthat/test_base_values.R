@@ -52,6 +52,7 @@ TestConfiguration <- function(fit_object, se_group) {
 
 
 test_that("regression works", {
+  skip_if_not_installed("ivreg")
   TestRegressionConfiguration <- function(num_groups, weights) {
     df <- generate_regression_data(100, 0.5, num_groups=num_groups)
     fit_object <- lm(y ~ x1 + 1, df, x=TRUE, y=TRUE, weights=weights)
@@ -83,6 +84,7 @@ test_that("regression works", {
 
 
 test_that("se groups can be non-ordered", {
+  skip_if_not_installed("ivreg")
   num_obs <- 100
   df <- generate_iv_regression_data(num_obs, 0.5, num_groups=10)
   iv_res <- ivreg(y ~ x1 + 1 | z1 + 1, data=df, x=TRUE, y=TRUE)
@@ -114,6 +116,7 @@ test_that("se groups can be non-ordered", {
 
 # Check that rerun matches R with left-out observations.
 test_that("rerun works", {
+  skip_if_not_installed("ivreg")
   # Generate base data.
   num_obs <- 100
   df <- generate_iv_regression_data(num_obs, 0.5, num_groups=10)

@@ -27,6 +27,7 @@
 
 
 test_that("derivatives work", {
+  skip_if_not_installed("ivreg")
   set.seed(302)
 
   # Pure-R computation of betahat and SE, compatible with complex weights.

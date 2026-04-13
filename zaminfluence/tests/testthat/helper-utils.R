@@ -1,6 +1,12 @@
-# Load packages needed by tests but not by the package itself
+# Packages needed by tests but not by the package itself.
+# dplyr is a hard package Import (always available). ivreg is a Suggests-only
+# dep: load it opportunistically here so bare `ivreg()` calls in tests resolve,
+# but individual IV tests must still call skip_if_not_installed("ivreg") so
+# the suite remains runnable when ivreg is absent.
 library(dplyr)
-library(ivreg)
+if (requireNamespace("ivreg", quietly=TRUE)) {
+  library(ivreg)
+}
 
 assert_nearly_equal <- function(x, y, tol=1e-9, desc=NULL) {
   diff_norm <- max(abs(x - y))
