@@ -38,6 +38,7 @@ test_that("logit base values match glm", {
 
 
 test_that("logit derivatives match numerical derivatives", {
+  skip_if_not_installed("numDeriv")
   TestLogitDerivs <- function(model_grads) {
     RerunCoeff <- function(w) {
       rerun_fit <- model_grads$rerun_fun(w)
@@ -166,6 +167,7 @@ test_that("logit unsupported inputs error", {
 
 
 test_that("logit with offset works", {
+  skip_if_not_installed("numDeriv")
   set.seed(77)
   num_obs <- 200
   df <- generate_logit_data(num_obs, c(0.5, -0.3))

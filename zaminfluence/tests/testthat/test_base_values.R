@@ -52,6 +52,9 @@ TestConfiguration <- function(fit_object, se_group) {
 
 
 test_that("regression works", {
+  # Grouped configs (num_groups=10) route through get_fit_covariance ->
+  # sandwich::vcovCL; sandwich is Suggests-only.
+  have_sandwich <- requireNamespace("sandwich", quietly=TRUE)
   TestRegressionConfiguration <- function(num_groups, weights) {
     df <- generate_regression_data(100, 0.5, num_groups=num_groups)
     fit_object <- lm(y ~ x1 + 1, df, x=TRUE, y=TRUE, weights=weights)
@@ -59,9 +62,11 @@ test_that("regression works", {
   }
 
   TestRegressionConfiguration(num_groups=NULL, weights=NULL)
-  TestRegressionConfiguration(num_groups=10, weights=NULL)
   TestRegressionConfiguration(num_groups=NULL, weights=runif(100))
-  TestRegressionConfiguration(num_groups=10, weights=runif(100))
+  if (have_sandwich) {
+    TestRegressionConfiguration(num_groups=10, weights=NULL)
+    TestRegressionConfiguration(num_groups=10, weights=runif(100))
+  }
 
   if (requireNamespace("ivreg", quietly=TRUE)) {
     TestIVRegressionConfiguration <- function(num_groups, weights) {
@@ -72,9 +77,11 @@ test_that("regression works", {
     }
 
     TestIVRegressionConfiguration(num_groups=NULL, weights=NULL)
-    TestIVRegressionConfiguration(num_groups=10, weights=NULL)
     TestIVRegressionConfiguration(num_groups=NULL, weights=runif(100))
-    TestIVRegressionConfiguration(num_groups=10, weights=runif(100))
+    if (have_sandwich) {
+      TestIVRegressionConfiguration(num_groups=10, weights=NULL)
+      TestIVRegressionConfiguration(num_groups=10, weights=runif(100))
+    }
   }
 })
 
@@ -84,6 +91,9 @@ test_that("regression works", {
 
 
 test_that("se groups can be non-ordered", {
+  # Entire test is about grouped-SE handling, which goes through
+  # sandwich::vcovCL via get_fit_covariance.
+  skip_if_not_installed("sandwich")
   num_obs <- 100
   df <- generate_iv_regression_data(num_obs, 0.5, num_groups=10)
   reg_res <- lm(y ~ x1 + 1, data=df, x=TRUE, y=TRUE)
@@ -121,6 +131,8 @@ test_that("se groups can be non-ordered", {
 # Check that rerun matches R with left-out observations.
 test_that("rerun works", {
   have_ivreg <- requireNamespace("ivreg", quietly=TRUE)
+  # Grouped-SE paths (use_se_group=TRUE below) exercise sandwich::vcovCL.
+  have_sandwich <- requireNamespace("sandwich", quietly=TRUE)
   # Generate base data.
   num_obs <- 100
   df <- generate_iv_regression_data(num_obs, 0.5, num_groups=10)
@@ -134,18 +146,20 @@ test_that("rerun works", {
   # Use Rerun to get fits using our code.  Check that our results
   # match R's results.  (Note that this is only an extra sanity check
   # here --- this is principally tested above in TestConfiguration)
-  zam_reg_fit <- compute_regression_results(
-    reg_fit, weights=df$w, se_group=df$se_group)
-  reg_vcov <- get_fit_covariance(reg_fit, se_group=df$se_group)
-  assert_nearly_equal(reg_fit$coefficients, zam_reg_fit$betahat)
-  assert_nearly_equal(reg_vcov, as.numeric(zam_reg_fit$se_mat))
+  if (have_sandwich) {
+    zam_reg_fit <- compute_regression_results(
+      reg_fit, weights=df$w, se_group=df$se_group)
+    reg_vcov <- get_fit_covariance(reg_fit, se_group=df$se_group)
+    assert_nearly_equal(reg_fit$coefficients, zam_reg_fit$betahat)
+    assert_nearly_equal(reg_vcov, as.numeric(zam_reg_fit$se_mat))
 
-  if (have_ivreg) {
-    zam_iv_fit <- compute_iv_regression_results(
-      iv_fit, weights=df$w, se_group=df$se_group)
-    iv_vcov <- get_fit_covariance(iv_fit, se_group=df$se_group)
-    assert_nearly_equal(iv_fit$coefficients, zam_iv_fit$betahat)
-    assert_nearly_equal(iv_vcov, as.numeric(zam_iv_fit$se_mat))
+    if (have_ivreg) {
+      zam_iv_fit <- compute_iv_regression_results(
+        iv_fit, weights=df$w, se_group=df$se_group)
+      iv_vcov <- get_fit_covariance(iv_fit, se_group=df$se_group)
+      assert_nearly_equal(iv_fit$coefficients, zam_iv_fit$betahat)
+      assert_nearly_equal(iv_vcov, as.numeric(zam_iv_fit$se_mat))
+    }
   }
 
   # Test that rerun works with left-out observations.  Generate a weight
@@ -167,6 +181,7 @@ test_that("rerun works", {
   for (use_iv in c(TRUE, FALSE)) {
     if (use_iv && !have_ivreg) next
     for (use_se_group in c(TRUE, FALSE)) {
+      if (use_se_group && !have_sandwich) next
       if (use_se_group) {
         se_group <- df$se_group
       } else {
