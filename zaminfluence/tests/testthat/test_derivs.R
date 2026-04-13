@@ -27,7 +27,6 @@
 
 
 test_that("derivatives work", {
-  skip_if_not_installed("ivreg")
   set.seed(302)
 
   # Pure-R computation of betahat and SE, compatible with complex weights.
@@ -135,6 +134,7 @@ test_that("derivatives work", {
   TestRegressionConfigurationDerivs <- function(
         num_groups, weights, keep_pars, do_iv) {
     if (do_iv) {
+      if (!requireNamespace("ivreg", quietly=TRUE)) return(invisible(NULL))
       df <- generate_iv_regression_data(
         num_obs, c(0.5, -0.5, 0.0), num_groups=num_groups)
       fit_object <- ivreg(y ~ x1 + x2 + x3 + 1 | z1 + z2 + z3 + 1,

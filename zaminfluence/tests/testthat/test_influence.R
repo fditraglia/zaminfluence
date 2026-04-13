@@ -42,7 +42,7 @@ generate_test_instance <- function(do_iv, do_grouping) {
     se_group <- if (do_grouping) df$se_group else NULL
 
     model_grads <-
-        compute_model_influence(fit_object) |>
+        compute_model_influence(fit_object, se_group=se_group) |>
         append_target_regressor_influence("x1")
     signals <- get_inference_signals(model_grads)
 
@@ -216,9 +216,9 @@ TestInfluence <- function(test_instance) {
 
 
 test_that("influence_computations_correct", {
-  skip_if_not_installed("ivreg")
   set.seed(42)
   for (do_iv in c(TRUE, FALSE)) {
+    if (do_iv && !requireNamespace("ivreg", quietly=TRUE)) next
     for (do_grouping in c(TRUE, FALSE)) {
       sprintf("Running %s %s",
           if (do_iv) "IV" else "OLS",

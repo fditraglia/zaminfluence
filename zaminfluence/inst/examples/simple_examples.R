@@ -12,7 +12,7 @@
 library(tidyverse)
 library(gridExtra)
 library(zaminfluence)
-library(AER)
+library(ivreg)
 
 compare <- function(x, y) { return(max(abs(x - y))) }
 check_equivalent  <- function(x, y) { stopifnot(compare(x, y) < 1e-8) }

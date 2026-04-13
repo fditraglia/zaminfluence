@@ -52,7 +52,6 @@ TestConfiguration <- function(fit_object, se_group) {
 
 
 test_that("regression works", {
-  skip_if_not_installed("ivreg")
   TestRegressionConfiguration <- function(num_groups, weights) {
     df <- generate_regression_data(100, 0.5, num_groups=num_groups)
     fit_object <- lm(y ~ x1 + 1, df, x=TRUE, y=TRUE, weights=weights)
@@ -64,18 +63,19 @@ test_that("regression works", {
   TestRegressionConfiguration(num_groups=NULL, weights=runif(100))
   TestRegressionConfiguration(num_groups=10, weights=runif(100))
 
-  TestIVRegressionConfiguration <- function(num_groups, weights) {
-    df <- generate_iv_regression_data(100, 0.5, num_groups=num_groups)
-    iv_res <- ivreg(y ~ x1 + 1 | z1 + 1,
-                    data=df, x=TRUE, y=TRUE, weights=weights)
-    TestConfiguration(iv_res, se_group=df[["se_group"]])
+  if (requireNamespace("ivreg", quietly=TRUE)) {
+    TestIVRegressionConfiguration <- function(num_groups, weights) {
+      df <- generate_iv_regression_data(100, 0.5, num_groups=num_groups)
+      iv_res <- ivreg(y ~ x1 + 1 | z1 + 1,
+                      data=df, x=TRUE, y=TRUE, weights=weights)
+      TestConfiguration(iv_res, se_group=df[["se_group"]])
+    }
+
+    TestIVRegressionConfiguration(num_groups=NULL, weights=NULL)
+    TestIVRegressionConfiguration(num_groups=10, weights=NULL)
+    TestIVRegressionConfiguration(num_groups=NULL, weights=runif(100))
+    TestIVRegressionConfiguration(num_groups=10, weights=runif(100))
   }
-
-  TestIVRegressionConfiguration(num_groups=NULL, weights=NULL)
-  TestIVRegressionConfiguration(num_groups=10, weights=NULL)
-  TestIVRegressionConfiguration(num_groups=NULL, weights=runif(100))
-  TestIVRegressionConfiguration(num_groups=10, weights=runif(100))
-
 })
 
 
@@ -84,24 +84,28 @@ test_that("regression works", {
 
 
 test_that("se groups can be non-ordered", {
-  skip_if_not_installed("ivreg")
   num_obs <- 100
   df <- generate_iv_regression_data(num_obs, 0.5, num_groups=10)
-  iv_res <- ivreg(y ~ x1 + 1 | z1 + 1, data=df, x=TRUE, y=TRUE)
   reg_res <- lm(y ~ x1 + 1, data=df, x=TRUE, y=TRUE)
+  iv_res <- if (requireNamespace("ivreg", quietly=TRUE)) {
+    ivreg(y ~ x1 + 1 | z1 + 1, data=df, x=TRUE, y=TRUE)
+  } else {
+    NULL
+  }
 
   TestSEGroup <- function(se_group) {
     reg_zam <- compute_regression_results(reg_res, se_group=se_group)
-    iv_zam <- compute_iv_regression_results(iv_res, se_group=se_group)
-
     # The coefficients shouldn't depend on se_group, but test for good measure
     assert_nearly_equal(reg_zam$betahat, reg_res$coefficients)
-    assert_nearly_equal(iv_zam$betahat, iv_res$coefficients)
-
     assert_nearly_equal(
       as.numeric(reg_zam$se_mat), get_fit_covariance(reg_res, se_group=se_group))
-    assert_nearly_equal(
-      as.numeric(iv_zam$se_mat), get_fit_covariance(iv_res, se_group=se_group))
+
+    if (!is.null(iv_res)) {
+      iv_zam <- compute_iv_regression_results(iv_res, se_group=se_group)
+      assert_nearly_equal(iv_zam$betahat, iv_res$coefficients)
+      assert_nearly_equal(
+        as.numeric(iv_zam$se_mat), get_fit_covariance(iv_res, se_group=se_group))
+    }
   }
 
   TestSEGroup(NULL)
@@ -116,29 +120,33 @@ test_that("se groups can be non-ordered", {
 
 # Check that rerun matches R with left-out observations.
 test_that("rerun works", {
-  skip_if_not_installed("ivreg")
+  have_ivreg <- requireNamespace("ivreg", quietly=TRUE)
   # Generate base data.
   num_obs <- 100
   df <- generate_iv_regression_data(num_obs, 0.5, num_groups=10)
   df$w <- runif(num_obs) + 0.5
 
-  iv_fit <- ivreg(y ~ x1 + 1 | z1 + 1, data=df, x=TRUE, y=TRUE, weights=df$w)
   reg_fit <- lm(y ~ x1 + 1, data=df, x=TRUE, y=TRUE, weights=df$w)
+  iv_fit <- if (have_ivreg) {
+    ivreg(y ~ x1 + 1 | z1 + 1, data=df, x=TRUE, y=TRUE, weights=df$w)
+  } else NULL
 
   # Use Rerun to get fits using our code.  Check that our results
   # match R's results.  (Note that this is only an extra sanity check
   # here --- this is principally tested above in TestConfiguration)
-  zam_iv_fit <- compute_iv_regression_results(
-    iv_fit, weights=df$w, se_group=df$se_group)
-  iv_vcov <- get_fit_covariance(iv_fit, se_group=df$se_group)
-  assert_nearly_equal(iv_fit$coefficients, zam_iv_fit$betahat)
-  assert_nearly_equal(iv_vcov, as.numeric(zam_iv_fit$se_mat))
-
   zam_reg_fit <- compute_regression_results(
     reg_fit, weights=df$w, se_group=df$se_group)
   reg_vcov <- get_fit_covariance(reg_fit, se_group=df$se_group)
   assert_nearly_equal(reg_fit$coefficients, zam_reg_fit$betahat)
   assert_nearly_equal(reg_vcov, as.numeric(zam_reg_fit$se_mat))
+
+  if (have_ivreg) {
+    zam_iv_fit <- compute_iv_regression_results(
+      iv_fit, weights=df$w, se_group=df$se_group)
+    iv_vcov <- get_fit_covariance(iv_fit, se_group=df$se_group)
+    assert_nearly_equal(iv_fit$coefficients, zam_iv_fit$betahat)
+    assert_nearly_equal(iv_vcov, as.numeric(zam_iv_fit$se_mat))
+  }
 
   # Test that rerun works with left-out observations.  Generate a weight
   # vector with randomly left-out observations.
@@ -157,6 +165,7 @@ test_that("rerun works", {
   # Re-run using OLS or IV, and grouped standard errors or not, and check
   # that our results match R.
   for (use_iv in c(TRUE, FALSE)) {
+    if (use_iv && !have_ivreg) next
     for (use_se_group in c(TRUE, FALSE)) {
       if (use_se_group) {
         se_group <- df$se_group
