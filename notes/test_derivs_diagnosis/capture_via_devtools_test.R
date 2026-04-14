@@ -115,8 +115,17 @@ writeLines(c(
   '})'
 ), test_path)
 
-on.exit(if (file.exists(test_path)) file.remove(test_path), add=TRUE)
-
 message("Running diagnostic via devtools::test()...")
-invisible(devtools::test(pkg="zaminfluence", reporter="silent"))
+result <- tryCatch(
+  invisible(devtools::test(pkg="zaminfluence", reporter="silent")),
+  error = function(e) e,
+  finally = {
+    # `on.exit` at top level doesn't fire reliably when Rscript terminates,
+    # so clean up explicitly here.
+    if (file.exists(test_path)) {
+      file.remove(test_path)
+      message("Removed temporary test file: ", test_path)
+    }
+  }
+)
 cat("Wrote:", file.path(out_dir, "report_devtools.md"), "\n")
