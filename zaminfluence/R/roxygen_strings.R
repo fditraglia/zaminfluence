@@ -3,24 +3,25 @@
 
 docs <- list(
   model_grads=paste0(
-      "A model gradient object (e.g. as produced by [ComputeModelInfluence])"
+      "A model gradient object (e.g. as produced by [compute_model_influence])"
   ),
   param_infl=paste0(
     "A parameter influence object (e.g. as produced by ",
-    "[AppendTargetRegressorInfluence])."
+    "[append_target_regressor_influence])."
   ),
   qoi=paste0(
     "A quantity of interest object (e.g. as produced by ",
-    "[QOIInfluence])."
+    "[qoi_influence])."
   ),
   signal=paste0("A signal object (e.g. one of the elements of the list ",
-    "produced by [GetInferenceSignalsForParameter])."),
+    "produced by [get_inference_signals_for_parameter])."),
   apip=paste0("An approximation perturbation inducing proportion object ",
-"(e.g. as produced by [GetAPIPForQOI])"),
+"(e.g. as produced by [get_apip_for_qoi])"),
 drop_inds="The indices to drop (in the order of the original data)",
 
-  model_fit="The fit from [lm()] or [AER::ivreg()].",
+  model_fit="The fit from [lm()] or [ivreg::ivreg()].",
   lm_result="The regression result, i.e, the output of [lm()].",
+  glm_result="The logistic regression result, i.e, the output of [glm()] with family=binomial.",
   iv_res="The iv regression result, i.e, the output of [ivreg()].",
   se_group="Optional. The standard error grouping variable.",
   keep_pars="Optional. The names of parameters for which to compute derivatives.",
@@ -37,7 +38,6 @@ drop_inds="The indices to drop (in the order of the original data)",
     "  \\item{model_fit}{The original fit as returned by the fitting function} \n",
     "  \\item{num_obs}{The number of observations given weights} \n",
     "  \\item{parameter_names}{The names of the regressors as strings} \n",
-    "  \\item{grad_fun}{The function used to compute the derivatives} \n",
     "  \\item{param}{The estimated regression coefficient ",
     "at the original weights} \n",
     "  \\item{se}{The standard errors at the original weights} \n",

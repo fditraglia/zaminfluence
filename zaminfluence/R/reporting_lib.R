@@ -1,9 +1,3 @@
-library(tidyr)
-library(purrr)
-library(latex2exp)
-library(ggplot2)
-library(tibble)
-
 
 ################################################################################
 # Plotting and visualization functions
@@ -11,37 +5,37 @@ library(tibble)
 
 #' Summarize the values of each QOI for each parameter for a given model_fit.
 #'@param model_fit `r docs$model_fit`
-#'@param param_infls A list of ParameterInferenceInfluence objects.
+#'@param param_infls A list of parameter_inference_influence objects.
 #'@return A dataframe summarizing the values of all quantities of interest
 #' in `param_infls` for `model_fit`.
 #'@export
-GetModelFitInferenceDataframe <- function(model_fit, param_infls) {
+get_model_fit_inference_df <- function(model_fit, param_infls) {
     if (is.null(model_fit)) {
       return(data.frame())
     }
-    stopifnot(class(model_fit) == "ModelFit")
+    stopifnot(inherits(model_fit, "model_fit"))
     stopifnot(all(names(param_infls) %in% model_fit$parameter_names))
 
     GetParameterInferenceDataframe <-
       function(model_fit, target_index, sig_num_ses) {
-        GetInferenceQOIs(param=model_fit$param[target_index],
+        get_inference_qois(param=model_fit$param[target_index],
                          se=model_fit$se[target_index],
-                         sig_num_ses=sig_num_ses) %>%
-            purrr::imap_dfr(~ data.frame(metric=.y, value=.x))
+                         sig_num_ses=sig_num_ses) |>
+            purrr::imap_dfr(\(x, y) data.frame(metric=y, value=x))
     }
 
     summary_df <- data.frame()
-    AppendRow <- function(row) bind_rows(summary_df, row)
+    AppendRow <- function(row) dplyr::bind_rows(summary_df, row)
     for (param_name in names(param_infls)) {
         param_infl <- param_infls[[param_name]]
         # We checked above that each parameter name is found.
-        target_index <- GetParameterIndex(model_fit, param_name)
+        target_index <- get_parameter_index(model_fit, param_name)
         summary_df <-
             GetParameterInferenceDataframe(
                 model_fit=model_fit,
                 target_index=target_index,
-                sig_num_ses=param_infl$sig_num_ses) %>%
-            mutate(param_name=param_name) %>%
+                sig_num_ses=param_infl$sig_num_ses) |>
+            dplyr::mutate(param_name=param_name) |>
             AppendRow()
     }
     return(summary_df)
@@ -50,7 +44,7 @@ GetModelFitInferenceDataframe <- function(model_fit, param_infls) {
 
 # The signals and reruns are expected to have a matching list structure,
 # which we enforce with this function.
-ValidateSignalsAndReruns <- function(signals, reruns) {
+validate_signals_and_reruns <- function(signals, reruns) {
   stopifnot(setequal(names(reruns), names(signals)))
   for (target_param_name in names(reruns)) {
       param_reruns  <- reruns[[target_param_name]]
@@ -59,9 +53,9 @@ ValidateSignalsAndReruns <- function(signals, reruns) {
       for (signal_name in names(param_reruns)) {
           rerun <- param_reruns[[signal_name]]
           signal <- param_signals[[signal_name]]
-          stopifnot(class(signal) == "QOISignal")
+          stopifnot(inherits(signal, "qoi_signal"))
           if (signal$apip$success) {
-            stopifnot(class(rerun) == "ModelFit")
+            stopifnot(inherits(rerun, "model_fit"))
           } else {
             stopifnot(is.null(rerun))
           }
@@ -70,30 +64,41 @@ ValidateSignalsAndReruns <- function(signals, reruns) {
 }
 
 #' For signals and reruns lists, produce a dataframe summarizing the two.
-#'@export
-GetSignalsAndRerunsDataframe <- function(signals, reruns, model_grads) {
-  ValidateSignalsAndReruns(signals, reruns)
+#'
+#' @param signals A nested list of `qoi_signal` objects (e.g. the output of
+#'   [get_inference_signals()]).
+#' @param reruns A nested list with the same structure as `signals`, where
+#'   each leaf is either a `model_fit` (on successful rerun) or `NULL`
+#'   (e.g. the output of [rerun_for_signals()] or [predict_for_signals()]).
+#' @param model_grads `r docs$model_grads`
+#'
+#' @return A dataframe joining each signal's summary with the rerun's
+#'   inference quantities of interest, one row per (parameter, signal).
+#'
+#' @export
+get_signals_and_reruns_df <- function(signals, reruns, model_grads) {
+  validate_signals_and_reruns(signals, reruns)
 
-  reruns_dfs <- map_depth(
-    reruns, 2, ~ GetModelFitInferenceDataframe(., model_grads$param_infls))
+  reruns_dfs <- purrr::map_depth(
+    reruns, 2, \(x) get_model_fit_inference_df(x, model_grads$param_infls))
 
   rerun_df <-
-      tibble(list=reruns_dfs) %>%
-      mutate(target_param_name=names(list)) %>%
-      unnest_longer(col=list, indices_to="target_signal") %>%
-      unnest(list)
+      tibble::tibble(list=reruns_dfs) |>
+      dplyr::mutate(target_param_name=names(list)) |>
+      tidyr::unnest_longer(col=list, indices_to="target_signal") |>
+      tidyr::unnest(list)
 
   signal_dfs <-
-      map_depth(signals, 2, ~ data.frame(
-          description=.$description, n_drop=.$apip$n, prop_drop=.$apip$prop,
-          target_qoi=.$qoi$name))
+      purrr::map_depth(signals, 2, \(x) data.frame(
+          description=x$description, n_drop=x$apip$n, prop_drop=x$apip$prop,
+          target_qoi=x$qoi$name))
   signal_df <-
-      tibble(list=signal_dfs) %>%
-      mutate(target_param_name=names(list)) %>%
-      unnest_longer(col=list, indices_to="target_signal") %>%
-      unnest(list)
+      tibble::tibble(list=signal_dfs) |>
+      dplyr::mutate(target_param_name=names(list)) |>
+      tidyr::unnest_longer(col=list, indices_to="target_signal") |>
+      tidyr::unnest(list)
 
-  return(inner_join(
+  return(dplyr::inner_join(
     rerun_df, signal_df, by=c("target_param_name", "target_signal")))
 }
 
@@ -109,9 +114,9 @@ GetSignalsAndRerunsDataframe <- function(signals, reruns, model_grads) {
 #' @return A dataframe with predictions, leaving out cumulatively more
 #' points according to the sorting QOI's influence scores.
 #' @export
-GetSortedInfluenceDf <- function(param_infl, sorting_qoi_name,
+get_sorted_influence_df <- function(param_infl, sorting_qoi_name,
                                  max_num_obs=Inf) {
-    stopifnot(class(param_infl) == "ParameterInferenceInfluence")
+    stopifnot(inherits(param_infl, "parameter_inference_influence"))
     stopifnot(sorting_qoi_name %in% param_infl$qoi_names)
     qoi_for_sorting <- param_infl[[sorting_qoi_name]]
 
@@ -121,8 +126,8 @@ GetSortedInfluenceDf <- function(param_infl, sorting_qoi_name,
             ordered_inds <- ordered_inds[1:max_num_obs]
         }
         qoi_df <- data.frame(
-            num_dropped=c(0, 1:length(ordered_inds))) %>%
-            mutate(prop_dropped=num_dropped /
+            num_dropped=c(0, 1:length(ordered_inds))) |>
+            dplyr::mutate(prop_dropped=num_dropped /
                        qoi_for_sorting[[infl_sign]]$num_obs,
                    sign=infl_sign)
         for (qoi_name in c("param", "param_mzse", "param_pzse")) {
@@ -134,8 +139,8 @@ GetSortedInfluenceDf <- function(param_infl, sorting_qoi_name,
     }
 
     qoi_df <-
-        bind_rows(GetQOIDf("pos"), GetQOIDf("neg")) %>%
-        mutate(sorted_by=sorting_qoi_name)
+        dplyr::bind_rows(GetQOIDf("pos"), GetQOIDf("neg")) |>
+        dplyr::mutate(sorted_by=sorting_qoi_name)
 
     return(qoi_df)
 }
@@ -143,17 +148,19 @@ GetSortedInfluenceDf <- function(param_infl, sorting_qoi_name,
 
 
 #' Plot influence scores, signals, and reruns.
-#' @param influence_df The output of [GetSortedInfluenceDf]
+#' @param influence_df The output of [get_sorted_influence_df]
+#' @param signal `r docs$signal`
+#' @param rerun_vals (Optional) Named list with entries `param`, `param_mzse`,
+#'   `param_pzse` giving refit values to overlay on the plot.
 #' @param plot_num_dropped If TRUE, plot the number dropped on the x-axis.
 #' If FALSE (the default), plot the proportion dropped.
 #' @param apip_max The maximum value for the x-axis (as a number or proportion
 #' according to the value of `plot_num_dropped`).
-#' @param signals (Optional) A list of signals to plot.
 #' @param include_y_zero (Optional) If TRUE (the default), force the y-axis
 #' to include zero and plot a horizontal line.
 #'
 #' @return A plot.
-PlotInfluenceDf <- function(influence_df, signal, rerun_vals=NULL,
+plot_influence_df <- function(influence_df, signal, rerun_vals=NULL,
                             plot_num_dropped=FALSE,
                             apip_max=NULL,
                             include_y_zero=TRUE) {
@@ -162,40 +169,40 @@ PlotInfluenceDf <- function(influence_df, signal, rerun_vals=NULL,
             influence_df$prop_dropped
 
     if (!is.null(apip_max)) {
-      influence_df <- filter(influence_df, alpha  <= apip_max)
+      influence_df <- dplyr::filter(influence_df, alpha  <= apip_max)
     }
 
-    plot <- ggplot(influence_df, aes(x=alpha))
+    plot <- ggplot2::ggplot(influence_df, ggplot2::aes(x=alpha))
     if (include_y_zero) {
         plot <-
             plot +
-            geom_line(aes(y=0.0), col="gray50")
+            ggplot2::geom_line(ggplot2::aes(y=0.0), col="gray50")
     }
 
-    base_param <- filter(influence_df, alpha == 0) %>% pull("param") %>% unique()
+    base_param <- dplyr::filter(influence_df, alpha == 0) |> dplyr::pull("param") |> unique()
     stopifnot(length(base_param) == 1)
     plot <-
         plot +
-        geom_line(aes(y=!!base_param), col="blue", lwd=2) +
-        geom_ribbon(aes(
+        ggplot2::geom_line(ggplot2::aes(y=!!base_param), col="blue", lwd=2) +
+        ggplot2::geom_ribbon(ggplot2::aes(
             ymin=param_mzse,
             ymax=param_pzse,
             group=sign),
             fill="blue", color=NA, alpha=0.1) +
-        geom_line(aes(y=param, group=sign), lwd=2)
+        ggplot2::geom_line(ggplot2::aes(y=param, group=sign), lwd=2)
 
     xlab_name <- if (plot_num_dropped)
         "Number of points removed" else "Proportion of points removed"
-    plot <- plot + guides(color="none") + xlab(xlab_name)
+    plot <- plot + ggplot2::guides(color="none") + ggplot2::xlab(xlab_name)
 
     # Plot the signal
     if (signal$apip$success) {
       alpha_type <- if (plot_num_dropped) "n" else "prop"
       alpha <- signal$apip[[alpha_type]]
       if (is.null(apip_max) || (!is.null(apip_max) && alpha <= apip_max)) {
-          plot <- plot + geom_vline(aes(xintercept=!!alpha,
+          plot <- plot + ggplot2::geom_vline(ggplot2::aes(xintercept=!!alpha,
                                         linetype=!!signal$description)) +
-                  guides(linetype=guide_legend(title="Change type"))
+                  ggplot2::guides(linetype=ggplot2::guide_legend(title="Change type"))
       }
     }
 
@@ -203,14 +210,14 @@ PlotInfluenceDf <- function(influence_df, signal, rerun_vals=NULL,
       errorbar_width <- diff(range(influence_df$alpha)) / 50
       plot <-
           plot +
-          geom_errorbar(aes(
+          ggplot2::geom_errorbar(ggplot2::aes(
               x=!!alpha,
               ymin=rerun_vals$param_mzse,
               ymax=rerun_vals$param_pzse),
               data=NULL,
               width=errorbar_width,
               lwd=1.5) +
-          geom_point(aes(x=!!alpha, y=rerun_vals$param),
+          ggplot2::geom_point(ggplot2::aes(x=!!alpha, y=rerun_vals$param),
                      data=NULL,
                      shape=8)
     }
@@ -219,14 +226,25 @@ PlotInfluenceDf <- function(influence_df, signal, rerun_vals=NULL,
 }
 
 
-#' Plot influence scores, signals, and reruns.
-#' @param param_infl `r docs$param_infl`
-#' @param signal `r docs$signal`
-#' @return A plot for the specified signal.
-#'@export
-PlotSignal <- function(model_grads, signals, parameter_name, target_signal,
+#' Plot influence scores, signals, and reruns for one signal.
+#'
+#' @param model_grads `r docs$model_grads`
+#' @param signals A nested list of signals (e.g. output of
+#'   [get_inference_signals()]).
+#' @param parameter_name The name of the parameter whose signal to plot;
+#'   must be an entry of `model_grads$param_infls`.
+#' @param target_signal The name of the signal within `signals[[parameter_name]]`
+#'   to plot (`"sign"`, `"sig"`, or `"both"`).
+#' @param reruns (Optional) A nested list of reruns matching the structure
+#'   of `signals` (e.g. output of [rerun_for_signals()]); refit values for
+#'   `target_signal` are overlaid on the plot.
+#' @param ... Additional arguments passed to [plot_influence_df()].
+#'
+#' @return A ggplot object.
+#' @export
+plot_signal <- function(model_grads, signals, parameter_name, target_signal,
                        reruns=NULL, ...) {
-    stopifnot(class(model_grads) == "ModelGrads")
+    stopifnot(inherits(model_grads, "model_grads"))
     stopifnot(parameter_name %in% names(model_grads$param_infls))
     param_infl <- model_grads$param_infls[[parameter_name]]
 
@@ -235,19 +253,19 @@ PlotSignal <- function(model_grads, signals, parameter_name, target_signal,
     stopifnot(parameter_name %in% names(signals))
     stopifnot(target_signal %in%  names(signals[[parameter_name]]))
     signal <- signals[[parameter_name]][[target_signal]]
-    stopifnot(class(signal) == "QOISignal")
+    stopifnot(inherits(signal, "qoi_signal"))
 
     rerun_vals <- NULL
     if (!is.null(reruns)) {
-      ValidateSignalsAndReruns(signals, reruns)
+      validate_signals_and_reruns(signals, reruns)
       rerun <- reruns[[parameter_name]][[target_signal]]
       if (!is.null(rerun)) {
-        rerun_vals <- GetParameterInferenceQOIs(
+        rerun_vals <- get_parameter_inference_qois(
           rerun, parameter_name, sig_num_ses=param_infl$sig_num_ses)
       }
     }
 
-    influence_df <- GetSortedInfluenceDf(param_infl, signal$qoi$name)
-    plot <- PlotInfluenceDf(influence_df, signal, rerun_vals=rerun_vals, ...)
+    influence_df <- get_sorted_influence_df(param_infl, signal$qoi$name)
+    plot <- plot_influence_df(influence_df, signal, rerun_vals=rerun_vals, ...)
     return(plot)
 }
